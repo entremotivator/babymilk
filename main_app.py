@@ -65,8 +65,10 @@ def apply_custom_css():
         font-family: 'Inter', sans-serif;
     }
     
-    /* Sidebar styling */
-    .css-1d391kg {
+    /* Sidebar styling - Multiple selectors for compatibility */
+    .css-1d391kg,
+    .st-emotion-cache-1d391kg,
+    section[data-testid="stSidebar"] > div {
         background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
         color: white !important;
         border-right: 2px solid #f59e0b;
@@ -76,7 +78,17 @@ def apply_custom_css():
     .css-1d391kg .stText,
     .css-1d391kg p,
     .css-1d391kg span,
-    .css-1d391kg div {
+    .css-1d391kg div,
+    .st-emotion-cache-1d391kg .stMarkdown, 
+    .st-emotion-cache-1d391kg .stText,
+    .st-emotion-cache-1d391kg p,
+    .st-emotion-cache-1d391kg span,
+    .st-emotion-cache-1d391kg div,
+    section[data-testid="stSidebar"] .stMarkdown,
+    section[data-testid="stSidebar"] .stText,
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] div {
         color: white !important;
     }
     
@@ -366,10 +378,12 @@ def hide_sidebar():
     """Hide the sidebar for login page"""
     st.markdown("""
     <style>
-        .css-1d391kg {display: none;}
-        section[data-testid="stSidebar"] {display: none;}
-        .css-6qob1r {display: none;}
-        .e1fqkh3o3 {display: none;}
+        section[data-testid="stSidebar"] {display: none !important;}
+        .css-1d391kg {display: none !important;}
+        .css-6qob1r {display: none !important;}
+        .e1fqkh3o3 {display: none !important;}
+        .st-emotion-cache-1d391kg {display: none !important;}
+        .st-emotion-cache-6qob1r {display: none !important;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -377,10 +391,12 @@ def show_sidebar():
     """Show the sidebar for authenticated users"""
     st.markdown("""
     <style>
-        .css-1d391kg {display: flex !important;}
-        section[data-testid="stSidebar"] {display: flex !important;}
-        .css-6qob1r {display: flex !important;}
-        .e1fqkh3o3 {display: flex !important;}
+        section[data-testid="stSidebar"] {display: block !important;}
+        .css-1d391kg {display: block !important;}
+        .css-6qob1r {display: block !important;}
+        .e1fqkh3o3 {display: block !important;}
+        .st-emotion-cache-1d391kg {display: block !important;}
+        .st-emotion-cache-6qob1r {display: block !important;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -994,7 +1010,7 @@ def main():
         page_title="AI Agent Toolkit by D Hudson", 
         page_icon="🤖", 
         layout="wide",
-        initial_sidebar_state="collapsed"
+        initial_sidebar_state="auto"
     )
     
     apply_custom_css()
