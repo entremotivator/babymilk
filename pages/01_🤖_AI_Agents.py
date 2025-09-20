@@ -23,9 +23,6 @@ def hide_streamlit_style():
             div[data-testid="stToolbar"] {visibility: hidden;}
             div[data-testid="stDecoration"] {visibility: hidden;}
             div[data-testid="stStatusWidget"] {visibility: hidden;}
-            #MainMenu {visibility: hidden;}
-            header {visibility: hidden;}
-            footer {visibility: hidden;}
             </style>
             """
     st.markdown(hide_st_style, unsafe_allow_html=True)
