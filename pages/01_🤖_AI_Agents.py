@@ -947,4 +947,4 @@ agent_options = ["Agent 1", "Agent 2", "Agent 3"]
 selected_agent = st.selectbox("Choose an AI Agent:", agent_options, key="agent_selector_main")
 
 # Example of adding unique keys to any other selectbox with same options
-backup_agent = st.selectbox("
+backup_agent = st.selectbox("Choose Backup Agent:", agent_options, key="agent_selector_backup")
