@@ -23,6 +23,9 @@ def hide_streamlit_style():
             div[data-testid="stToolbar"] {visibility: hidden;}
             div[data-testid="stDecoration"] {visibility: hidden;}
             div[data-testid="stStatusWidget"] {visibility: hidden;}
+            #MainMenu {visibility: hidden;}
+            header {visibility: hidden;}
+            footer {visibility: hidden;}
             </style>
             """
     st.markdown(hide_st_style, unsafe_allow_html=True)
@@ -237,7 +240,7 @@ with menu_col1:
     if st.button("🏠 Home", use_container_width=True):
         st.switch_page("main_app.py")
 with menu_col2:
-    if st.button("🛠️ AI Tools", use_container_width=True):
+    if st.button("🛠️ AI Tools", use_container_width=True, key="ai_tools_main"):
         st.switch_page("pages/02_🛠️_AI_Tools.py")
 with menu_col3:
     if st.button("📚 Resources", use_container_width=True):
@@ -883,7 +886,7 @@ st.markdown("---")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    if st.button("🛠️ AI Tools", use_container_width=True):
+    if st.button("🛠️ AI Tools", use_container_width=True, key="ai_tools_secondary"):
         st.switch_page("pages/02_🛠️_AI_Tools.py")
 
 with col2:
@@ -937,3 +940,11 @@ with st.sidebar:
 
 st.markdown("---")
 st.markdown("*This page is part of the AI Agent Toolkit by D Hudson. Master the art of building intelligent, autonomous AI agents.*")
+
+agent_options = ["Agent 1", "Agent 2", "Agent 3"]
+
+# Example of adding unique keys to selectbox elements that might be duplicated
+selected_agent = st.selectbox("Choose an AI Agent:", agent_options, key="agent_selector_main")
+
+# Example of adding unique keys to any other selectbox with same options
+backup_agent = st.selectbox("
