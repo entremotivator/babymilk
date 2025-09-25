@@ -2,13 +2,12 @@ import streamlit as st
 from supabase import create_client, Client
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import base64
 import os
 
 # -------------------------
-# Hide Streamlit Elements
+# Streamlit UI Helpers
 # -------------------------
 def hide_streamlit_style():
     hide_st_style = """
@@ -35,19 +34,59 @@ def apply_custom_css():
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
     .stApp {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
         color: #ffffff;
         font-family: 'Inter', sans-serif;
     }
-    /* Sidebar styling */
-    .css-1d391kg,
-    .st-emotion-cache-1d391kg,
-    section[data-testid="stSidebar"] > div {
+
+    /* Sidebar width and color */
+    [data-testid="stSidebar"][aria-expanded="true"] > div:first-child {
+        width: 340px;
+    }
+    [data-testid="stSidebar"] {
+        min-width: 340px;
         background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
         color: white !important;
         border-right: 2px solid #f59e0b;
     }
+
+    /* Sidebar headings */
+    .sidebar-header {
+        color: #f59e0b !important;
+        font-weight: 700;
+        font-size: 1.2rem;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* Sidebar buttons */
+    .stSidebar .stButton>button, .stSidebar .stDownloadButton>button {
+        background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+        color: #222;
+        font-weight: bold;
+        border-radius: 12px;
+        margin-top: 8px;
+        font-family: 'Inter', sans-serif;
+        transition: all 0.3s ease;
+    }
+    .stSidebar .stButton>button:hover {
+        background: linear-gradient(90deg, #d97706 0%, #b45309 100%);
+        box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+        transform: translateY(-2px);
+    }
+
+    /* Sidebar inputs */
+    .stSidebar .stTextInput>div>div>input, 
+    .stSidebar .stSelectbox>div>div>select {
+        background: #262f3f;
+        color: #fff;
+        border-radius: 10px;
+        font-family: 'Inter', sans-serif;
+    }
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -105,7 +144,7 @@ def init_connection() -> Client:
 supabase = init_connection()
 
 # -------------------------
-# Session State
+# Session State Initialization
 # -------------------------
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -115,7 +154,7 @@ if "user" not in st.session_state:
     st.session_state.user = None
 
 # -------------------------
-# Authentication Functions
+# Authentication Logic
 # -------------------------
 def signup(email, password):
     if not email or not password:
@@ -167,74 +206,11 @@ def logout():
     st.session_state.authenticated = False
     st.session_state.role = None
     st.session_state.user = None
-    st.rerun()
+    st.experimental_rerun()
 
 # -------------------------
-# Resource Downloads
+# User Management & Admin Reports
 # -------------------------
-def show_resources():
-    st.subheader("📚 AI Agent Toolkit Resources")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("### 📋 The Ultimate AI & Bot Checklist")
-        st.write("Comprehensive guide for AI agent development.")
-        if os.path.exists("/home/ubuntu/ai-agent-toolkit/AI_and_Bot_Checklist.pdf"):
-            with open("/home/ubuntu/ai-agent-toolkit/AI_and_Bot_Checklist.pdf", "rb") as file:
-                st.download_button(
-                    label="📥 Download Checklist PDF",
-                    data=file.read(),
-                    file_name="AI_and_Bot_Checklist.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-    with col2:
-        st.markdown("### 🛠️ 250 Best AI Tools")
-        st.write("Curated list of top AI tools.")
-        if os.path.exists("/home/ubuntu/ai-agent-toolkit/250_Best_AI_Tools.pdf"):
-            with open("/home/ubuntu/ai-agent-toolkit/250_Best_AI_Tools.pdf", "rb") as file:
-                st.download_button(
-                    label="📥 Download AI Tools PDF",
-                    data=file.read(),
-                    file_name="250_Best_AI_Tools.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-    st.markdown("---")
-    st.markdown("""
-    <div style="text-align: center; margin: 2rem 0;">
-        <a href="https://entremotivator.com" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);color:#000;padding:0.75rem 1.5rem;border-radius:12px;font-weight:600;text-decoration:none;">🚀 Visit Entremotivator.com for More Resources</a>
-    </div>
-    """, unsafe_allow_html=True)
-
-# -------------------------
-# Admin Dashboard
-# -------------------------
-def admin_dashboard():
-    show_sidebar()
-    display_logo()
-    st.title("👑 AI Agent Toolkit - Admin Dashboard")
-    with st.sidebar:
-        st.markdown("### 🔧 Admin Tools")
-        if st.session_state.user:
-            st.info(f"👤 {st.session_state.user.email}\n🎭 {st.session_state.role.title()}")
-        if st.button("🚪 Logout", type="secondary", use_container_width=True):
-            logout()
-        st.divider()
-        admin_section = st.selectbox(
-            "Select Section",
-            ["📊 Analytics", "👥 User Management", "📚 Resources", "📈 Reports", "⚙️ Settings"]
-        )
-    if admin_section == "📊 Analytics":
-        show_admin_analytics()
-    elif admin_section == "👥 User Management":
-        show_user_management()
-    elif admin_section == "📚 Resources":
-        show_resources()
-    elif admin_section == "📈 Reports":
-        show_system_reports()
-    elif admin_section == "⚙️ Settings":
-        show_admin_settings()
-
 def show_admin_analytics():
     st.subheader("📊 AI Agent Toolkit Analytics")
     try:
@@ -339,7 +315,7 @@ def show_user_management():
                         if st.button("Update Role", key=f"update_{i}"):
                             supabase.table("user_profiles").update({"role": new_role}).eq("id", user["id"]).execute()
                             st.success(f"Updated {user['email']} to {new_role}")
-                            st.rerun()
+                            st.experimental_rerun()
                     with action_col2:
                         if st.button("🔄 Reset Password", key=f"reset_{i}"):
                             success, msg = reset_password(user["email"])
@@ -353,80 +329,13 @@ def show_user_management():
                                 supabase.table("user_profiles").delete().eq("id", user["id"]).execute()
                                 supabase.auth.admin.delete_user(user["id"])
                                 st.warning(f"Deleted {user['email']}")
-                                st.rerun()
+                                st.experimental_rerun()
                             except Exception as e:
                                 st.error(f"Failed to delete: {e}")
         else:
             st.info("No users found matching your criteria.")
     except Exception as e:
         st.error(f"Error loading users: {e}")
-
-def show_system_reports():
-    st.subheader("📈 System Reports")
-    st.write("**Recent System Activity**")
-    activity_data = [
-        {"timestamp": datetime.now() - timedelta(minutes=5), "action": "User login", "user": "user@example.com"},
-        {"timestamp": datetime.now() - timedelta(minutes=15), "action": "New user registration", "user": "newuser@example.com"},
-        {"timestamp": datetime.now() - timedelta(hours=1), "action": "Password reset", "user": "forgot@example.com"},
-        {"timestamp": datetime.now() - timedelta(hours=2), "action": "Admin role assigned", "user": "admin@example.com"},
-    ]
-    for activity in activity_data:
-        st.write(f"🕐 {activity['timestamp'].strftime('%Y-%m-%d %H:%M')} - {activity['action']} - {activity['user']}")
-    st.subheader("🏥 System Health")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Database Status", "✅ Healthy", delta="99.9% uptime")
-    with col2:
-        st.metric("Auth Service", "✅ Operational", delta="0 errors")
-    with col3:
-        st.metric("API Response", "⚡ Fast", delta="120ms avg")
-
-def show_admin_settings():
-    st.subheader("⚙️ System Settings")
-    st.write("**Security Configuration**")
-    password_policy = st.checkbox("Enforce minimum password length", value=True)
-    session_timeout = st.slider("Session timeout (hours)", 1, 24, 8)
-    two_factor = st.checkbox("Require 2FA for admins", value=False)
-    st.write("**Email Configuration**")
-    welcome_email = st.checkbox("Send welcome emails", value=True)
-    notification_email = st.text_input("Admin notification email", value="admin@company.com")
-    st.write("**System Maintenance**")
-    if st.button("🧹 Clean up old sessions"):
-        st.success("Old sessions cleaned up!")
-    if st.button("📊 Generate system report"):
-        st.success("System report generated!")
-    if st.button("💾 Save Settings", type="primary"):
-        st.success("Settings saved successfully!")
-
-# -------------------------
-# User Dashboard
-# -------------------------
-def user_dashboard():
-    show_sidebar()
-    display_logo()
-    st.title("🤖 Welcome to the AI Agent Toolkit")
-    user_email = st.session_state.user.email if st.session_state.user else "Unknown"
-    user_id = st.session_state.user.id if st.session_state.user else None
-    with st.sidebar:
-        st.markdown("### 🏠 Dashboard")
-        st.info(f"👤 {user_email.split('@')[0].title()}\n🎭 {st.session_state.role.title()}\n📧 {user_email}")
-        if st.button("🚪 Logout", type="secondary", use_container_width=True):
-            logout()
-        st.divider()
-        page = st.selectbox(
-            "Navigate to:",
-            ["📊 My Activity", "📚 Resources", "👤 Profile", "🔔 Notifications", "❓ Help"]
-        )
-    if page == "📊 My Activity":
-        show_user_activity(user_id, user_email)
-    elif page == "📚 Resources":
-        show_resources()
-    elif page == "👤 Profile":
-        show_user_profile(user_id, user_email)
-    elif page == "🔔 Notifications":
-        show_user_notifications(user_email)
-    elif page == "❓ Help":
-        show_user_help()
 
 def show_user_activity(user_id, user_email):
     st.subheader("📊 Your Activity Overview")
@@ -523,14 +432,18 @@ def login_page():
     hide_sidebar()
     display_logo()
     st.markdown("""
-    <div style="text-align: center; padding: 3rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius:16px; color:#000; margin-bottom:2rem; box-shadow: 0 8px 32px rgba(245,158,11,0.4);">
+    <div style="text-align: center; padding: 3rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+         border-radius:16px; color:#000; margin-bottom:2rem; box-shadow: 0 8px 32px rgba(245,158,11,0.4);">
         <h1>🔐 AI Agent Toolkit Authentication Portal</h1>
         <p>Secure access to your personalized AI toolkit dashboard</p>
     </div>
     """, unsafe_allow_html=True)
+    
     tab1, tab2, tab3 = st.tabs(["🔑 Login", "📝 Sign Up", "🔄 Reset Password"])
+    
     with tab1:
-        st.markdown('<div style="background:linear-gradient(135deg,rgba(30,41,59,0.95),rgba(51,65,85,0.95)); padding:3rem;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3); border:1px solid #475569;margin:2rem 0;">', unsafe_allow_html=True)
+        st.markdown('<div style="background:linear-gradient(135deg,rgba(30,41,59,0.95),rgba(51,65,85,0.95)); padding:3rem;border-radius:20px;\
+                    box-shadow:0 20px 60px rgba(0,0,0,0.3); border:1px solid #475569;margin:2rem 0;">', unsafe_allow_html=True)
         st.subheader("🔑 Sign In to Your Account")
         with st.form("login_form"):
             email = st.text_input("📧 Email Address", placeholder="your.email@example.com")
@@ -542,14 +455,15 @@ def login_page():
                     if success:
                         st.success(msg)
                         st.balloons()
-                        st.rerun()
+                        st.experimental_rerun()
                     else:
                         st.error(msg)
                 else:
                     st.warning("Please fill in all fields.")
         st.markdown('</div>', unsafe_allow_html=True)
     with tab2:
-        st.markdown('<div style="background:linear-gradient(135deg,rgba(30,41,59,0.95),rgba(51,65,85,0.95)); padding:3rem;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3); border:1px solid #475569;margin:2rem 0;">', unsafe_allow_html=True)
+        st.markdown('<div style="background:linear-gradient(135deg,rgba(30,41,59,0.95),rgba(51,65,85,0.95)); padding:3rem;border-radius:20px;\
+                     box-shadow:0 20px 60px rgba(0,0,0,0.3); border:1px solid #475569;margin:2rem 0;">', unsafe_allow_html=True)
         st.subheader("📝 Create New Account")
         st.info("💡 New accounts are created as regular users. Contact an administrator to upgrade to admin privileges.")
         with st.form("signup_form"):
@@ -574,7 +488,8 @@ def login_page():
                     st.warning("Please fill in all fields.")
         st.markdown('</div>', unsafe_allow_html=True)
     with tab3:
-        st.markdown('<div style="background:linear-gradient(135deg,rgba(30,41,59,0.95),rgba(51,65,85,0.95)); padding:3rem;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3); border:1px solid #475569;margin:2rem 0;">', unsafe_allow_html=True)
+        st.markdown('<div style="background:linear-gradient(135deg,rgba(30,41,59,0.95),rgba(51,65,85,0.95)); padding:3rem;border-radius:20px;\
+                    box-shadow:0 20px 60px rgba(0,0,0,0.3); border:1px solid #475569;margin:2rem 0;">', unsafe_allow_html=True)
         st.subheader("🔄 Reset Your Password")
         with st.form("reset_form"):
             email = st.text_input("📧 Email Address", placeholder="Enter your registered email address")
@@ -591,16 +506,88 @@ def login_page():
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------
-# Main App
+# Sidebar Menu (All Users)
+# -------------------------
+def show_sidebar_menu():
+    st.sidebar.title("🧭 AI Agent Toolkit Menu")
+
+    if st.session_state.user:
+        st.sidebar.markdown(f"👤 **{st.session_state.user.email.split('@')[0].title()}**")
+        st.sidebar.markdown(f"🎭 **Role:** {st.session_state.role.capitalize()}")
+    st.sidebar.divider()
+
+    nav_items = ["🏠 Dashboard", "📊 Analytics", "📚 Resources", "🔔 Notifications", "👤 Profile", "❓ Help"]
+    if st.session_state.role == "admin":
+        nav_items.insert(2, "👥 User Management")
+        nav_items.insert(4, "⚙️ Settings")
+
+    page = st.sidebar.radio("Navigate to:", nav_items, index=0)
+    
+    if st.sidebar.button("🚪 Logout"):
+        logout()
+
+    return page
+
+# -------------------------
+# Admin Dashboard
+# -------------------------
+def admin_dashboard():
+    show_sidebar()
+    display_logo()
+    st.title("👑 AI Agent Toolkit - Admin Dashboard")
+
+    page = show_sidebar_menu()
+
+    if page == "📊 Analytics":
+        show_admin_analytics()
+    elif page == "👥 User Management":
+        show_user_management()
+    elif page == "📚 Resources":
+        show_resources()
+    elif page == "⚙️ Settings":
+        show_admin_settings()
+    elif page == "🔔 Notifications":
+        show_user_notifications(st.session_state.user.email)
+    elif page == "👤 Profile":
+        show_user_profile(st.session_state.user.id, st.session_state.user.email)
+    elif page == "❓ Help":
+        show_user_help()
+    else:
+        show_user_activity(st.session_state.user.id, st.session_state.user.email)
+
+# -------------------------
+# Regular User Dashboard
+# -------------------------
+def user_dashboard():
+    show_sidebar()
+    display_logo()
+    st.title("🤖 Welcome to the AI Agent Toolkit")
+
+    page = show_sidebar_menu()
+
+    if page == "🏠 Dashboard":
+        show_user_activity(st.session_state.user.id, st.session_state.user.email)
+    elif page == "📚 Resources":
+        show_resources()
+    elif page == "🔔 Notifications":
+        show_user_notifications(st.session_state.user.email)
+    elif page == "👤 Profile":
+        show_user_profile(st.session_state.user.id, st.session_state.user.email)
+    elif page == "❓ Help":
+        show_user_help()
+
+# -------------------------
+# Main Application Entry
 # -------------------------
 def main():
     st.set_page_config(
-        page_title="AI Agent Toolkit by D Hudson", 
-        page_icon="🤖", 
+        page_title="AI Agent Toolkit by D Hudson",
+        page_icon="🤖",
         layout="wide",
-        initial_sidebar_state="expanded"  # Always show sidebar when possible
+        initial_sidebar_state="expanded"
     )
     apply_custom_css()
+
     if not st.session_state.authenticated:
         login_page()
     else:
@@ -611,3 +598,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
