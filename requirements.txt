@@ -15,3 +15,4 @@ Pillow>=10.0.0
 # Additional dependencies for enhanced features
 python-dotenv>=1.0.0
 requests>=2.31.0
+auth
