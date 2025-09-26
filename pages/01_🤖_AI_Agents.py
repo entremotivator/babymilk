@@ -56,17 +56,29 @@ def apply_ai_toolkit_theme():
         font-family: 'Inter', sans-serif;
     }
     
-    /* Sidebar styling */
+    /* Fixed Sidebar styling - always visible and properly styled */
     .css-1d391kg, [data-testid="stSidebar"] {
         display: block !important;
         visibility: visible !important;
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
-        border-right: 2px solid #475569 !important;
+        background: linear-gradient(180deg, #1e293b 0%, #334155 100%) !important;
+        border-right: 3px solid #f59e0b !important;
+        box-shadow: 4px 0 20px rgba(245, 158, 11, 0.3) !important;
+        width: 350px !important;
+        min-width: 350px !important;
         padding: 1rem !important;
     }
     
+    section[data-testid="stSidebar"] > div {
+        background: linear-gradient(180deg, #1e293b 0%, #334155 100%) !important;
+        padding: 2rem 1.5rem !important;
+    }
+    
     /* Sidebar content styling */
-    .css-1d391kg .stMarkdown, [data-testid="stSidebar"] .stMarkdown {
+    .css-1d391kg .stMarkdown, [data-testid="stSidebar"] .stMarkdown,
+    .css-1d391kg .stText, [data-testid="stSidebar"] .stText,
+    .css-1d391kg p, [data-testid="stSidebar"] p,
+    .css-1d391kg span, [data-testid="stSidebar"] span,
+    .css-1d391kg div, [data-testid="stSidebar"] div {
         color: #ffffff !important;
         font-family: 'Inter', sans-serif;
     }
@@ -77,30 +89,31 @@ def apply_ai_toolkit_theme():
         color: #f59e0b !important;
         font-weight: 600;
         font-family: 'Inter', sans-serif;
+        text-align: center;
+        margin-bottom: 1rem;
     }
     
     /* Sidebar button styling */
     .css-1d391kg .stButton > button, [data-testid="stSidebar"] .stButton > button {
-        background: rgba(30, 41, 59, 0.8) !important;
-        color: #ffffff !important;
-        border: 1px solid #475569 !important;
-        border-radius: 8px !important;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+        color: #000000 !important;
+        border: none !important;
+        border-radius: 12px !important;
         width: 100% !important;
-        padding: 0.5rem 1rem !important;
-        font-weight: 500 !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 600 !important;
         font-family: 'Inter', sans-serif !important;
         transition: all 0.3s ease !important;
         margin-bottom: 0.5rem !important;
-        text-transform: none !important;
-        letter-spacing: normal !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4) !important;
     }
     
     .css-1d391kg .stButton > button:hover, [data-testid="stSidebar"] .stButton > button:hover {
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.2) 100%) !important;
-        border-color: #f59e0b !important;
-        color: #f59e0b !important;
-        transform: translateY(-1px) !important;
-        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3) !important;
+        background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+        box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6) !important;
+        transform: translateY(-2px) !important;
     }
     
     /* Sidebar links styling */
@@ -1026,7 +1039,7 @@ st.markdown("*This page is part of the AI Agent Toolkit by D Hudson. Master the 
 agent_options = ["Agent 1", "Agent 2", "Agent 3"]
 
 # Example of adding unique keys to selectbox elements that might be duplicated
-selected_agent = st.selectbox("Choose an AI Agent:", agent_options, key="agent_selector_main")
+selected_agent = st.selectbox("Choose an AI Agent:", agent_options, key="agent_selector_main_unique")
 
 # Example of adding unique keys to any other selectbox with same options
-backup_agent = st.selectbox("Choose Backup Agent:", agent_options, key="agent_selector_backup")
+backup_agent = st.selectbox("Choose Backup Agent:", agent_options, key="agent_selector_backup_unique")
