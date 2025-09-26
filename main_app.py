@@ -240,7 +240,7 @@ def apply_custom_css():
         font-family: 'Inter', sans-serif;
     }
     
-    /* <CHANGE> Enhanced Sidebar styling - Fixed and always visible */
+    /* Enhanced Sidebar styling - Fixed and always visible */
     .css-1d391kg,
     .st-emotion-cache-1d391kg,
     section[data-testid="stSidebar"] {
@@ -354,7 +354,7 @@ def apply_custom_css():
         transform: translateY(-2px);
     }
     
-    /* <CHANGE> Download button styling for JSON downloads */
+    /* Download button styling for JSON downloads */
     .stDownloadButton > button {
         background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
         color: #ffffff !important;
@@ -643,35 +643,12 @@ def get_base64_of_bin_file(bin_file):
 
 def display_logo():
     """Display the AI Agent Toolkit logo"""
-    logo_path = "/home/ubuntu/ai-agent-toolkit/logo.png"
+    logo_path = "babymilk-main/logo.png"
     if os.path.exists(logo_path):
         st.markdown(f"""
         <div class="logo-container">
             <img src="data:image/png;base64,{get_base64_of_bin_file(logo_path)}" alt="AI Agent Toolkit Logo">
         </div>
-        """, unsafe_allow_html=True)
-
-def force_show_sidebar():
-    """Force sidebar to be visible and prominent when not closed"""
-    if not st.session_state.sidebar_closed and st.session_state.sidebar_visible:
-        st.markdown("""
-        <style>
-            /* Force sidebar visibility with !important */
-            section[data-testid="stSidebar"] {
-                display: block !important;
-                visibility: visible !important;
-                width: 350px !important;
-                min-width: 350px !important;
-                z-index: 999999 !important;
-            }
-            
-            .css-1d391kg, .st-emotion-cache-1d391kg {
-                display: block !important;
-                visibility: visible !important;
-                width: 350px !important;
-                z-index: 999999 !important;
-            }
-        </style>
         """, unsafe_allow_html=True)
 
 # -------------------------
@@ -763,7 +740,7 @@ def logout():
     st.rerun()
 
 # -------------------------
-# <CHANGE> Enhanced JSON Download Functions
+# JSON Data Functions
 # -------------------------
 def get_user_data_as_json():
     """Get user data from Supabase as JSON"""
@@ -872,8 +849,8 @@ def show_resources():
         st.markdown("### 📋 The Ultimate AI & Bot Checklist")
         st.write("A comprehensive checklist to guide you through every stage of AI agent development.")
         
-        if os.path.exists("/home/ubuntu/ai-agent-toolkit/AI_and_Bot_Checklist.pdf"):
-            with open("/home/ubuntu/ai-agent-toolkit/AI_and_Bot_Checklist.pdf", "rb") as file:
+        if os.path.exists("babymilk-main/AI_and_Bot_Checklist.pdf"):
+            with open("babymilk-main/AI_and_Bot_Checklist.pdf", "rb") as file:
                 st.download_button(
                     label="📥 Download Checklist PDF",
                     data=file.read(),
@@ -886,8 +863,8 @@ def show_resources():
         st.markdown("### 🛠️ 250 Best AI Tools")
         st.write("A curated list of the most innovative and effective AI tools available today.")
         
-        if os.path.exists("/home/ubuntu/ai-agent-toolkit/250_Best_AI_Tools.pdf"):
-            with open("/home/ubuntu/ai-agent-toolkit/250_Best_AI_Tools.pdf", "rb") as file:
+        if os.path.exists("babymilk-main/250_Best_AI_Tools.pdf"):
+            with open("babymilk-main/250_Best_AI_Tools.pdf", "rb") as file:
                 st.download_button(
                     label="📥 Download AI Tools PDF",
                     data=file.read(),
@@ -896,7 +873,6 @@ def show_resources():
                     use_container_width=True
                 )
     
-    # <CHANGE> Added JSON download section
     st.markdown("---")
     st.markdown("### 📊 JSON Data Downloads")
     st.write("Export system data in JSON format for analysis or backup purposes.")
@@ -904,7 +880,7 @@ def show_resources():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("📥 Download User Data JSON", use_container_width=True):
+        if st.button("📥 Download User Data JSON", use_container_width=True, key="user_data_json"):
             user_json = get_user_data_as_json()
             if user_json:
                 st.download_button(
@@ -912,11 +888,12 @@ def show_resources():
                     data=json.dumps(user_json, indent=2),
                     file_name=f"user_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                     mime="application/json",
-                    use_container_width=True
+                    use_container_width=True,
+                    key="save_user_data_json"
                 )
     
     with col2:
-        if st.button("📊 Download Analytics JSON", use_container_width=True):
+        if st.button("📊 Download Analytics JSON", use_container_width=True, key="analytics_json"):
             analytics_json = get_analytics_data_as_json()
             if analytics_json:
                 st.download_button(
@@ -924,11 +901,12 @@ def show_resources():
                     data=json.dumps(analytics_json, indent=2),
                     file_name=f"analytics_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                     mime="application/json",
-                    use_container_width=True
+                    use_container_width=True,
+                    key="save_analytics_json"
                 )
     
     with col3:
-        if st.button("⚙️ Download System Config JSON", use_container_width=True):
+        if st.button("⚙️ Download System Config JSON", use_container_width=True, key="config_json"):
             config_json = get_system_config_as_json()
             if config_json:
                 st.download_button(
@@ -936,7 +914,8 @@ def show_resources():
                     data=json.dumps(config_json, indent=2),
                     file_name=f"system_config_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                     mime="application/json",
-                    use_container_width=True
+                    use_container_width=True,
+                    key="save_config_json"
                 )
     
     st.markdown("---")
@@ -963,13 +942,13 @@ def show_collaboration_section():
     
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("💬 Join Discussion Forum", use_container_width=True):
+        if st.button("💬 Join Discussion Forum", use_container_width=True, key="join_forum"):
             st.success("Redirecting to community forum...")
     with col2:
-        if st.button("📖 Share Your Experience", use_container_width=True):
+        if st.button("📖 Share Your Experience", use_container_width=True, key="share_exp"):
             st.success("Opening experience sharing form...")
     with col3:
-        if st.button("🎯 Request Feature", use_container_width=True):
+        if st.button("🎯 Request Feature", use_container_width=True, key="request_feature"):
             st.success("Opening feature request form...")
 
 # -------------------------
@@ -977,15 +956,13 @@ def show_collaboration_section():
 # -------------------------
 def admin_dashboard():
     """Admin dashboard with full management features"""
-    force_show_sidebar()
-    
+    # Removed force_show_sidebar() call as it's handled by apply_custom_css and sidebar logic
     display_logo()
     st.title("🎛️ AI Agent Toolkit - Admin Dashboard")
     
     # Render sidebar widget
     render_sidebar_widget()
     
-    # <CHANGE> Fixed sidebar - always visible and properly styled
     if st.session_state.sidebar_visible and not st.session_state.sidebar_closed:
         with st.sidebar:
             st.markdown("### 🎛️ Admin Command Center")
@@ -1001,13 +978,13 @@ def admin_dashboard():
                 """, unsafe_allow_html=True)
             
             st.markdown("### 🚀 Quick Actions")
-            if st.button("🔄 Refresh Data", use_container_width=True):
+            if st.button("🔄 Refresh Data", use_container_width=True, key="admin_refresh"):
                 st.success("Data refreshed!")
             
-            if st.button("📊 Export Reports", use_container_width=True):
+            if st.button("📊 Export Reports", use_container_width=True, key="admin_export"):
                 st.success("Reports exported!")
             
-            if st.button("🚪 Logout", type="secondary", use_container_width=True):
+            if st.button("🚪 Logout", type="secondary", use_container_width=True, key="admin_logout"):
                 logout()
             
             st.markdown("---")
@@ -1015,7 +992,8 @@ def admin_dashboard():
             admin_section = st.selectbox(
                 "📋 Select Admin Section",
                 ["📊 Analytics", "👥 User Management", "📚 Resources", "📋 Reports", "⚙️ Settings"],
-                help="Choose the admin section you want to manage"
+                help="Choose the admin section you want to manage",
+                key="admin_section_select"
             )
             
             st.markdown("---")
@@ -1024,8 +1002,9 @@ def admin_dashboard():
             st.info("👥 Active Users: 156")
             st.warning("⚡ Server Load: Medium")
     else:
-        admin_section = "📊 Analytics"  # Default when sidebar is closed
-    
+        # If sidebar is closed or not visible, set a default section to display
+        admin_section = "📊 Analytics" # Default section when sidebar is not fully visible
+
     if admin_section == "📊 Analytics":
         show_admin_analytics()
     elif admin_section == "👥 User Management":
@@ -1130,10 +1109,10 @@ def show_user_management():
         st.subheader("🎯 Bulk Actions")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("📧 Send Welcome Email to All"):
+            if st.button("📧 Send Welcome Email to All", key="bulk_welcome"):
                 st.success("Welcome emails sent to all users!")
         with col2:
-            if st.button("⬇️ Export User Data"):
+            if st.button("⬇️ Export User Data", key="export_users"):
                 df = pd.DataFrame(filtered)
                 st.download_button("Download CSV", df.to_csv(index=False), "users.csv", "text/csv")
 
@@ -1220,12 +1199,12 @@ def show_admin_settings():
     notification_email = st.text_input("Admin notification email", value="admin@company.com")
     
     st.write("**System Maintenance**")
-    if st.button("🧹 Clean up old sessions"):
+    if st.button("🧹 Clean up old sessions", key="cleanup_sessions"):
         st.success("Old sessions cleaned up!")
-    if st.button("📊 Generate system report"):
+    if st.button("📊 Generate system report", key="generate_report"):
         st.success("System report generated!")
     
-    if st.button("💾 Save Settings", type="primary"):
+    if st.button("💾 Save Settings", type="primary", key="save_settings"):
         st.success("Settings saved successfully!")
 
 # -------------------------
@@ -1233,15 +1212,13 @@ def show_admin_settings():
 # -------------------------
 def user_dashboard():
     """User dashboard with personalized features"""
-    force_show_sidebar()
-    
+    # Removed force_show_sidebar() call as it's handled by apply_custom_css and sidebar logic
     display_logo()
     st.title("🚀 AI Agent Toolkit - Your Personal Dashboard")
     
     # Render sidebar widget
     render_sidebar_widget()
     
-    # <CHANGE> Fixed sidebar - always visible and properly styled
     if st.session_state.sidebar_visible and not st.session_state.sidebar_closed:
         with st.sidebar:
             st.markdown("### 🎯 Your AI Toolkit")
@@ -1257,13 +1234,13 @@ def user_dashboard():
                 """, unsafe_allow_html=True)
             
             st.markdown("### 🚀 Quick Actions")
-            if st.button("📚 Browse Resources", use_container_width=True):
+            if st.button("📚 Browse Resources", use_container_width=True, key="user_resources"):
                 st.success("Loading resources...")
             
-            if st.button("🤝 Join Community", use_container_width=True):
+            if st.button("🤝 Join Community", use_container_width=True, key="user_community"):
                 st.success("Connecting to community...")
             
-            if st.button("🚪 Logout", type="secondary", use_container_width=True):
+            if st.button("🚪 Logout", type="secondary", use_container_width=True, key="user_logout"):
                 logout()
             
             st.markdown("---")
@@ -1271,7 +1248,8 @@ def user_dashboard():
             user_section = st.selectbox(
                 "📋 Select Section",
                 ["🏠 Dashboard", "📚 Resources", "🤝 Community", "👤 Profile", "🔔 Notifications", "❓ Help"],
-                help="Choose the section you want to explore"
+                help="Choose the section you want to explore",
+                key="user_section_select"
             )
             
             st.markdown("---")
@@ -1280,7 +1258,8 @@ def user_dashboard():
             st.progress(0.4, text="Resources Downloaded: 40%")
             st.progress(0.9, text="Community Engagement: 90%")
     else:
-        user_section = "🏠 Dashboard"  # Default when sidebar is closed
+        # If sidebar is closed or not visible, set a default section to display
+        user_section = "🏠 Dashboard" # Default section when sidebar is not fully visible
     
     if user_section == "🏠 Dashboard":
         show_user_dashboard_home()
@@ -1365,7 +1344,7 @@ def show_user_profile(user_id, user_email):
         new_password = st.text_input("New Password", type="password")
         confirm_password = st.text_input("Confirm New Password", type="password")
         
-        if st.form_submit_button("💾 Save Changes", type="primary"):
+        if st.form_submit_button("💾 Save Changes", type="primary", key="save_profile"):
             if new_password and new_password == confirm_password:
                 if len(new_password) >= 6:
                     st.success("Profile updated successfully!")
@@ -1399,7 +1378,7 @@ def show_user_notifications(user_email):
         if not notif["read"] and st.button(f"Mark as read", key=f"read_{i}"):
             st.success("Marked as read!")
     
-    if st.button("🧹 Clear all notifications"):
+    if st.button("🧹 Clear all notifications", key="clear_notifications"):
         st.success("All notifications cleared!")
 
 def show_user_help():
@@ -1428,7 +1407,7 @@ def show_user_help():
         subject = st.selectbox("Subject", ["General Question", "Technical Issue", "Feature Request", "Bug Report", "Community Help"])
         message = st.text_area("Message", placeholder="Describe your question or issue...")
         
-        if st.form_submit_button("📧 Send Message"):
+        if st.form_submit_button("📧 Send Message", key="send_support_message"):
             st.success("Your message has been sent! We'll get back to you soon.")
 
 def show_community_features():
@@ -1461,7 +1440,7 @@ def show_community_features():
                 if st.button(f"Join Discussion", key=f"join_{topic['title']}"):
                     st.success("Joining discussion thread...")
         
-        if st.button("➕ Start New Discussion", type="primary"):
+        if st.button("➕ Start New Discussion", type="primary", key="new_discussion"):
             st.success("Opening new discussion form...")
     
     with tab2:
@@ -1491,7 +1470,7 @@ def show_community_features():
             content = st.text_area("Share your experience...", height=200)
             tags = st.text_input("Tags (comma-separated)", placeholder="ai, automation, productivity")
             
-            if st.form_submit_button("📤 Share Experience"):
+            if st.form_submit_button("📤 Share Experience", key="share_experience"):
                 st.success("Thank you for sharing! Your experience will help others in the community.")
                 st.balloons()
     
@@ -1572,4 +1551,73 @@ def login_page():
     with tab2:
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
         st.subheader("📝 Create New Account")
+        st.info("💡 New accounts are created as regular users. Contact an administrator to upgrade to admin privileges.")
+        
+        with st.form("signup_form"):
+            email = st.text_input("📧 Email Address", placeholder="your.email@example.com")
+            password = st.text_input("🔒 Password", type="password", 
+                                   help="Must be at least 6 characters long")
+            confirm_password = st.text_input("🔒 Confirm Password", type="password")
+            
+            terms = st.checkbox("✅ I agree to the Terms of Service and Privacy Policy")
+            
+            if st.form_submit_button("📝 Create Account", type="primary", use_container_width=True):
+                if email and password and confirm_password:
+                    if password != confirm_password:
+                        st.error("❌ Passwords don't match!")
+                    elif not terms:
+                        st.warning("⚠️ Please agree to the terms and conditions.")
+                    else:
+                        success, msg = signup(email, password)
+                        if success:
+                            st.success(msg)
+                            st.balloons()
+                        else:
+                            st.error(msg)
+                else:
+                    st.warning("Please fill in all fields.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
+    with tab3:
+        st.markdown('<div class="login-container">', unsafe_allow_html=True)
+        st.subheader("🔐 Reset Your Password")
+        with st.form("reset_form"):
+            email = st.text_input("📧 Email Address", 
+                                 placeholder="Enter your registered email address")
+            st.info("💡 We'll send you a secure link to reset your password")
+            
+            if st.form_submit_button("📧 Send Reset Link", type="primary", use_container_width=True):
+                if email:
+                    success, msg = reset_password(email)
+                    if success:
+                        st.success(msg)
+                    else:
+                        st.error(msg)
+                else:
+                    st.warning("Please enter your email address.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# -------------------------
+# Main App
+# -------------------------
+def main():
+    """Main application"""
+    st.set_page_config(
+        page_title="AI Agent Toolkit by D Hudson", 
+        page_icon="🤖", 
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
+    
+    apply_custom_css()
+
+    if not st.session_state.authenticated:
+        login_page()
+    else:
+        if st.session_state.role == "admin":
+            admin_dashboard()
+        else:
+            user_dashboard()
+
+if __name__ == "__main__":
+    main()
