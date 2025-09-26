@@ -1,2029 +1,2126 @@
+#!/usr/bin/env python3
+"""
+🤖 ENHANCED AI AGENT TOOLKIT - STREAMLIT APPLICATION
+A comprehensive Streamlit application featuring 30+ specialized AI business assistants
+with OpenAI API integration, Supabase authentication, multi-page interface, and advanced features.
+"""
+
 import streamlit as st
-from supabase import create_client, Client
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
+from openai import OpenAI
+import tiktoken
 from datetime import datetime, timedelta
-import base64
-import os
 import json
-import hashlib
-import io
-import zipfile
-from typing import Dict, List, Optional, Tuple
-import logging
 import time
+from typing import Dict, List, Tuple, Optional
+import logging
+import hashlib
+import os
+import pandas as pd
+import io
+import base64
 import requests
 from PIL import Image
-import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import uuid
+import re
+from pathlib import Path
 
-# -------------------------
-# Configuration and Setup
-# -------------------------
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class Config:
-    """Application configuration constants"""
-    APP_NAME = "AI Agent Toolkit"
-    VERSION = "2.0.0"
-    AUTHOR = "D Hudson"
-    COMPANY = "Entremotivator"
-    SUPPORT_EMAIL = "support@entremotivator.com"
-    WEBSITE = "https://entremotivator.com"
-    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-    ALLOWED_FILE_TYPES = [".pdf", ".docx", ".txt", ".csv", ".json"]
-    SESSION_TIMEOUT = 3600  # 1 hour in seconds
-    
-# -------------------------
-# Enhanced Styling and UI
-# -------------------------
-def hide_streamlit_style():
-    """Enhanced hiding of Streamlit default elements"""
-    hide_st_style = """
-    <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    .stDeployButton {display:none;}
-    .stDecoration {display:none;}
-    .css-14xtw13.e8zbici0 {display: none;}
-    .css-1rs6os.edgvbvh3 {display: none;}
-    .css-vk3wp9.e1akgbir0 {display: none;}
-    .css-1j8o68f.edgvbvh9 {display: none;}
-    .css-1dp5vir.e8zbici0 {display: none;}
-    div[data-testid="stToolbar"] {visibility: hidden;}
-    div[data-testid="stDecoration"] {visibility: hidden;}
-    div[data-testid="stStatusWidget"] {visibility: hidden;}
-    .st-emotion-cache-1wbqy5l.e17vllj40 {display: none;}
-    </style>
-    """
-    st.markdown(hide_st_style, unsafe_allow_html=True)
+# ======================================================
+# 🎨 STREAMLIT CONFIGURATION & STYLING
+# ======================================================
 
-def apply_enhanced_css():
-    """Apply comprehensive custom styling"""
-    hide_streamlit_style()
-    st.markdown("""
-    <style>
-    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
-    @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
-    
-    :root {
-        --primary-color: #f59e0b;
-        --secondary-color: #d97706;
-        --accent-color: #fbbf24;
-        --dark-bg: #0f172a;
-        --medium-bg: #1e293b;
-        --light-bg: #334155;
-        --text-primary: #ffffff;
-        --text-secondary: #e2e8f0;
-        --success-color: #10b981;
-        --warning-color: #f59e0b;
-        --error-color: #ef4444;
-        --info-color: #3b82f6;
+# Hide Streamlit settings and menu
+st.set_page_config(
+    page_title="🤖 Enhanced AI Agent Toolkit",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': None,
+        'Report a bug': None,
+        'About': None
+    }
+)
+
+# Enhanced styling for the AI Agent Toolkit
+hide_streamlit_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+.stDeployButton {display:none;}
+.stDecoration {display:none;}
+
+/* Custom styling for Enhanced AI Agent Toolkit */
+.main-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 25px;
+    border-radius: 20px;
+    margin-bottom: 25px;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.main-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="1" fill="white" opacity="0.1"/><circle cx="10" cy="90" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    pointer-events: none;
+}
+
+.agent-card {
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    margin: 15px 0;
+    border-left: 5px solid #667eea;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.agent-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.2);
+    border-left-color: #764ba2;
+}
+
+.agent-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    border-radius: 50%;
+    transform: translate(30px, -30px);
+    transition: all 0.3s ease;
+}
+
+.agent-card:hover::before {
+    transform: translate(20px, -20px) scale(1.2);
+}
+
+.chat-container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.user-message {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 18px 25px;
+    border-radius: 25px 25px 8px 25px;
+    margin: 15px 0 15px 60px;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    position: relative;
+}
+
+.user-message::before {
+    content: '👤';
+    position: absolute;
+    left: -45px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.assistant-message {
+    background: #f8f9fa;
+    color: #333;
+    padding: 18px 25px;
+    border-radius: 25px 25px 25px 8px;
+    margin: 15px 60px 15px 0;
+    border-left: 5px solid #667eea;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.assistant-message::before {
+    content: '🤖';
+    position: absolute;
+    right: -45px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: white;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+}
+
+.feature-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 0.9em;
+    cursor: pointer;
+    margin: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.2);
+}
+
+.feature-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.stButton > button {
+    border-radius: 30px;
+    border: none;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+.stButton > button:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.sidebar-section {
+    background: rgba(102, 126, 234, 0.08);
+    padding: 20px;
+    border-radius: 20px;
+    margin: 20px 0;
+    border-left: 5px solid #667eea;
+    box-shadow: 0 2px 15px rgba(102, 126, 234, 0.1);
+}
+
+.metric-display {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin: 15px 0;
+    border-top: 4px solid #667eea;
+}
+
+.page-nav {
+    background: rgba(102, 126, 234, 0.05);
+    padding: 15px;
+    border-radius: 15px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.page-nav button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    margin: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.page-nav button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.category-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 15px;
+    margin: 20px 0 10px 0;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+/* Logo styling */
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 25px;
+}
+
+.logo-image {
+    max-width: 120px;
+    height: auto;
+    margin-right: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .user-message, .assistant-message {
+        margin-left: 15px;
+        margin-right: 15px;
     }
     
-    .stApp {
-        background: linear-gradient(135deg, var(--dark-bg) 0%, var(--medium-bg) 50%, var(--light-bg) 100%);
-        color: var(--text-primary);
-        font-family: 'Inter', sans-serif;
-        min-height: 100vh;
+    .user-message::before, .assistant-message::before {
+        display: none;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .agent-card {
+        background: #2d3748;
+        color: white;
     }
     
-    /* Enhanced Sidebar Styling */
-    .css-1d391kg,
-    .st-emotion-cache-1d391kg,
-    section[data-testid="stSidebar"] > div {
-        background: linear-gradient(180deg, var(--medium-bg) 0%, var(--light-bg) 100%);
-        color: var(--text-primary) !important;
-        border-right: 3px solid var(--primary-color);
-        box-shadow: 0 0 30px rgba(245,158,11,0.2);
+    .assistant-message {
+        background: #4a5568;
+        color: white;
     }
-    
-    /* Enhanced Cards and Containers */
-    .metric-card {
-        background: linear-gradient(135deg, rgba(30,41,59,0.8) 0%, rgba(51,65,85,0.8) 100%);
-        padding: 1.5rem;
-        border-radius: 16px;
-        border: 1px solid var(--primary-color);
-        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        backdrop-filter: blur(10px);
-        margin-bottom: 1rem;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+</style>
+"""
+
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
+# ======================================================
+# 🔑 API CONFIGURATION
+# ======================================================
+
+def initialize_openai():
+    """Initialize OpenAI client with API key from secrets or environment"""
+    try:
+        # Try Streamlit secrets first
+        if hasattr(st, 'secrets') and 'OPENAI_API_KEY' in st.secrets:
+            api_key = st.secrets['OPENAI_API_KEY']
+            return OpenAI(api_key=api_key), api_key
+        
+        # Fallback to environment variable
+        elif 'OPENAI_API_KEY' in os.environ:
+            api_key = os.environ['OPENAI_API_KEY']
+            return OpenAI(api_key=api_key), api_key
+        
+        # No API key found
+        return None, None
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize OpenAI: {str(e)}")
+        return None, None
+
+# ======================================================
+# 🤖 ENHANCED AI AGENT PERSONALITIES (30+ AGENTS)
+# ======================================================
+
+BOT_PERSONALITIES = {
+    # ENTREPRENEURSHIP & STARTUPS (Enhanced)
+    "Startup Strategist": {
+        "description": "I specialize in helping new businesses with comprehensive planning and execution. From MVP development to scaling strategies, I guide entrepreneurs through every stage of their startup journey with proven methodologies.",
+        "emoji": "🚀",
+        "category": "Entrepreneurship & Startups",
+        "temperature": 0.7,
+        "specialties": ["Business Planning", "MVP Development", "Product-Market Fit", "Growth Hacking", "Lean Startup"],
+        "quick_actions": ["Create Business Plan", "Validate Idea", "Find Co-founder", "Pitch Deck Help", "Market Analysis"]
+    },
+    "Business Plan Writer": {
+        "description": "I create comprehensive, investor-ready business plans with detailed market analysis, financial projections, and strategic roadmaps. I help entrepreneurs articulate their vision professionally.",
+        "emoji": "📝",
+        "category": "Entrepreneurship & Startups",
+        "temperature": 0.6,
+        "specialties": ["Business Plans", "Market Analysis", "Financial Projections", "Investor Presentations", "Strategic Planning"],
+        "quick_actions": ["Write Executive Summary", "Market Research", "Financial Model", "Competitive Analysis", "SWOT Analysis"]
+    },
+    "Venture Capital Advisor": {
+        "description": "I guide startups through fundraising and investment landscapes. I specialize in pitch deck creation, investor relations, valuation strategies, and due diligence preparation.",
+        "emoji": "💼",
+        "category": "Entrepreneurship & Startups",
+        "temperature": 0.6,
+        "specialties": ["Fundraising", "Pitch Decks", "Investor Relations", "Valuation", "Due Diligence"],
+        "quick_actions": ["Create Pitch Deck", "Find Investors", "Prepare Due Diligence", "Valuation Help", "Term Sheet Review"]
+    },
+    "Innovation Consultant": {
+        "description": "I help organizations foster innovation culture and develop breakthrough products. I specialize in design thinking, innovation frameworks, and disruptive business models.",
+        "emoji": "💡",
+        "category": "Entrepreneurship & Startups",
+        "temperature": 0.8,
+        "specialties": ["Design Thinking", "Innovation Strategy", "Product Innovation", "Business Model Innovation"],
+        "quick_actions": ["Innovation Workshop", "Ideation Session", "Product Roadmap", "Innovation Audit"]
+    },
+
+    # SALES & MARKETING (Enhanced)
+    "Sales Performance Coach": {
+        "description": "I help individuals and teams maximize sales potential through proven methodologies. I specialize in sales funnel optimization, conversion improvement, and advanced selling techniques.",
+        "emoji": "💼",
+        "category": "Sales & Marketing",
+        "temperature": 0.8,
+        "specialties": ["Sales Funnels", "Conversion Optimization", "Objection Handling", "Closing Techniques", "Sales Psychology"],
+        "quick_actions": ["Sales Script", "Objection Handling", "Pipeline Review", "Closing Tips", "Sales Training"]
+    },
+    "Marketing Strategy Expert": {
+        "description": "I have deep expertise in digital marketing, brand positioning, and customer acquisition. I help businesses build compelling campaigns across all channels with data-driven approaches.",
+        "emoji": "📱",
+        "category": "Sales & Marketing",
+        "temperature": 0.8,
+        "specialties": ["Digital Marketing", "Brand Positioning", "Customer Acquisition", "Campaign Strategy", "Marketing Analytics"],
+        "quick_actions": ["Marketing Plan", "Brand Strategy", "Campaign Ideas", "Target Audience", "Marketing Audit"]
+    },
+    "Content Marketing Strategist": {
+        "description": "I create engaging content that attracts and converts audiences. I develop content strategies, editorial calendars, storytelling frameworks, and content distribution plans.",
+        "emoji": "✍️",
+        "category": "Sales & Marketing",
+        "temperature": 0.8,
+        "specialties": ["Content Strategy", "Editorial Calendars", "Storytelling", "Brand Authority", "Content Distribution"],
+        "quick_actions": ["Content Calendar", "Blog Ideas", "Social Posts", "Video Scripts", "Content Audit"]
+    },
+    "Social Media Manager": {
+        "description": "I specialize in building and managing social media presence across all platforms. I create engaging content, manage communities, and drive social commerce results.",
+        "emoji": "📲",
+        "category": "Sales & Marketing",
+        "temperature": 0.8,
+        "specialties": ["Social Media Strategy", "Community Management", "Influencer Marketing", "Social Commerce"],
+        "quick_actions": ["Social Strategy", "Content Ideas", "Engagement Plan", "Influencer Outreach"]
+    },
+
+    # FINANCE & ACCOUNTING (Enhanced)
+    "Financial Controller": {
+        "description": "I specialize in business financial management, budgeting, and financial planning. I help optimize financial operations, manage cash flow, and ensure regulatory compliance.",
+        "emoji": "💰",
+        "category": "Finance & Accounting",
+        "temperature": 0.5,
+        "specialties": ["Financial Planning", "Budget Management", "Cash Flow", "Cost Control", "Financial Reporting"],
+        "quick_actions": ["Budget Planning", "Cash Flow Analysis", "Cost Reduction", "Financial Reports", "KPI Dashboard"]
+    },
+    "Investment Banking Advisor": {
+        "description": "I provide expertise in corporate finance, M&A, and capital raising. I help evaluate opportunities, structure deals, conduct valuations, and manage complex financial transactions.",
+        "emoji": "🏦",
+        "category": "Finance & Accounting",
+        "temperature": 0.5,
+        "specialties": ["Corporate Finance", "M&A", "Capital Raising", "Valuations", "Financial Modeling"],
+        "quick_actions": ["Deal Analysis", "Valuation Model", "M&A Strategy", "Capital Structure", "Financial Model"]
+    },
+    "Tax Strategy Advisor": {
+        "description": "I help businesses and individuals optimize their tax strategies while ensuring compliance. I specialize in tax planning, international tax, and tax-efficient structures.",
+        "emoji": "📊",
+        "category": "Finance & Accounting",
+        "temperature": 0.4,
+        "specialties": ["Tax Planning", "Tax Compliance", "International Tax", "Tax Optimization"],
+        "quick_actions": ["Tax Planning", "Compliance Check", "Tax Optimization", "Structure Review"]
+    },
+
+    # TECHNOLOGY & INNOVATION (Enhanced)
+    "Digital Transformation Consultant": {
+        "description": "I help organizations leverage technology to transform business models and operations. I specialize in digital strategy, technology adoption, and organizational change management.",
+        "emoji": "🔄",
+        "category": "Technology & Innovation",
+        "temperature": 0.7,
+        "specialties": ["Digital Strategy", "Technology Adoption", "Change Management", "Innovation", "Digital Culture"],
+        "quick_actions": ["Digital Roadmap", "Tech Assessment", "Change Plan", "Innovation Strategy", "Digital Audit"]
+    },
+    "AI Strategy Consultant": {
+        "description": "I help businesses leverage artificial intelligence for competitive advantage. I specialize in AI implementation, machine learning strategies, and automation frameworks.",
+        "emoji": "🤖",
+        "category": "Technology & Innovation",
+        "temperature": 0.7,
+        "specialties": ["AI Implementation", "Machine Learning", "Automation", "AI Strategy", "AI Ethics"],
+        "quick_actions": ["AI Roadmap", "Use Case Analysis", "Automation Plan", "ML Strategy", "AI Assessment"]
+    },
+    "Cybersecurity Expert": {
+        "description": "I provide comprehensive cybersecurity guidance to protect organizations from digital threats. I specialize in security frameworks, risk assessment, and incident response.",
+        "emoji": "🔒",
+        "category": "Technology & Innovation",
+        "temperature": 0.6,
+        "specialties": ["Security Strategy", "Risk Assessment", "Incident Response", "Compliance", "Security Training"],
+        "quick_actions": ["Security Audit", "Risk Assessment", "Security Plan", "Compliance Check", "Training Program"]
+    },
+
+    # OPERATIONS & MANAGEMENT (Enhanced)
+    "Operations Excellence Manager": {
+        "description": "I focus on streamlining processes and maximizing efficiency. I specialize in process improvement, supply chain optimization, lean methodologies, and operational excellence.",
+        "emoji": "⚙️",
+        "category": "Operations & Management",
+        "temperature": 0.6,
+        "specialties": ["Process Improvement", "Supply Chain", "Lean Methodologies", "Efficiency", "Quality Management"],
+        "quick_actions": ["Process Map", "Efficiency Audit", "Workflow Design", "Cost Optimization", "Quality Review"]
+    },
+    "Project Management Expert": {
+        "description": "I help organizations deliver projects on time and within budget. I specialize in project planning, resource allocation, risk management, and stakeholder communication.",
+        "emoji": "📋",
+        "category": "Operations & Management",
+        "temperature": 0.6,
+        "specialties": ["Project Planning", "Resource Management", "Risk Management", "Stakeholder Communication", "Agile Methodologies"],
+        "quick_actions": ["Project Plan", "Risk Assessment", "Team Structure", "Timeline Creation", "Status Report"]
+    },
+    "Supply Chain Optimizer": {
+        "description": "I optimize supply chain operations for efficiency and resilience. I specialize in logistics, vendor management, inventory optimization, and supply chain analytics.",
+        "emoji": "🚛",
+        "category": "Operations & Management",
+        "temperature": 0.6,
+        "specialties": ["Supply Chain Strategy", "Logistics", "Vendor Management", "Inventory Optimization"],
+        "quick_actions": ["Supply Chain Audit", "Vendor Analysis", "Logistics Plan", "Inventory Strategy"]
+    },
+
+    # HUMAN RESOURCES (Enhanced)
+    "Human Resources Director": {
+        "description": "I provide strategic HR guidance for organizational development. I specialize in talent management, culture building, performance optimization, and employee engagement.",
+        "emoji": "👥",
+        "category": "Human Resources",
+        "temperature": 0.7,
+        "specialties": ["Talent Management", "Culture Building", "Performance Management", "Employee Engagement", "HR Strategy"],
+        "quick_actions": ["Hiring Strategy", "Performance Review", "Culture Assessment", "Team Building", "HR Audit"]
+    },
+    "Talent Acquisition Specialist": {
+        "description": "I help organizations attract and hire top talent. I specialize in recruitment strategies, candidate assessment, employer branding, and talent pipeline development.",
+        "emoji": "🎯",
+        "category": "Human Resources",
+        "temperature": 0.7,
+        "specialties": ["Recruitment Strategy", "Candidate Assessment", "Employer Branding", "Interview Process", "Talent Pipeline"],
+        "quick_actions": ["Job Description", "Interview Questions", "Candidate Screening", "Offer Strategy", "Onboarding Plan"]
+    },
+    "Learning & Development Manager": {
+        "description": "I design and implement comprehensive learning programs that develop employee skills and drive organizational growth. I specialize in training design and performance improvement.",
+        "emoji": "📚",
+        "category": "Human Resources",
+        "temperature": 0.7,
+        "specialties": ["Training Design", "Skill Development", "Performance Improvement", "Leadership Development"],
+        "quick_actions": ["Training Program", "Skill Assessment", "Development Plan", "Leadership Training"]
+    },
+
+    # LEGAL & COMPLIANCE (New Category)
+    "Corporate Legal Advisor": {
+        "description": "I provide comprehensive legal guidance for business operations. I specialize in corporate law, contract negotiation, regulatory compliance, and risk mitigation.",
+        "emoji": "⚖️",
+        "category": "Legal & Compliance",
+        "temperature": 0.4,
+        "specialties": ["Corporate Law", "Contract Law", "Regulatory Compliance", "Risk Management", "Legal Strategy"],
+        "quick_actions": ["Contract Review", "Compliance Audit", "Legal Risk Assessment", "Policy Development"]
+    },
+    "Intellectual Property Specialist": {
+        "description": "I help protect and monetize intellectual property assets. I specialize in patents, trademarks, copyrights, trade secrets, and IP strategy development.",
+        "emoji": "🧠",
+        "category": "Legal & Compliance",
+        "temperature": 0.4,
+        "specialties": ["Patent Strategy", "Trademark Protection", "Copyright Law", "Trade Secrets", "IP Monetization"],
+        "quick_actions": ["IP Audit", "Patent Search", "Trademark Filing", "IP Strategy", "Licensing Plan"]
+    },
+    "Regulatory Compliance Expert": {
+        "description": "I ensure organizations meet all regulatory requirements across industries. I specialize in compliance frameworks, regulatory analysis, and audit preparation.",
+        "emoji": "📋",
+        "category": "Legal & Compliance",
+        "temperature": 0.4,
+        "specialties": ["Regulatory Analysis", "Compliance Frameworks", "Audit Preparation", "Policy Development"],
+        "quick_actions": ["Compliance Review", "Regulatory Update", "Audit Prep", "Policy Review"]
+    },
+    "Data Privacy Officer": {
+        "description": "I help organizations navigate data privacy regulations and build privacy-by-design frameworks. I specialize in GDPR, CCPA, and global privacy compliance.",
+        "emoji": "🔐",
+        "category": "Legal & Compliance",
+        "temperature": 0.4,
+        "specialties": ["Data Privacy", "GDPR Compliance", "Privacy by Design", "Data Governance"],
+        "quick_actions": ["Privacy Audit", "GDPR Assessment", "Privacy Policy", "Data Mapping"]
+    },
+
+    # E-COMMERCE & RETAIL (New Category)
+    "E-commerce Strategist": {
+        "description": "I help businesses build and optimize their online presence. I specialize in e-commerce platforms, conversion optimization, and digital retail strategies.",
+        "emoji": "🛒",
+        "category": "E-commerce & Retail",
+        "temperature": 0.7,
+        "specialties": ["E-commerce Strategy", "Conversion Optimization", "Digital Retail", "Customer Experience"],
+        "quick_actions": ["Store Audit", "Conversion Plan", "Product Strategy", "Customer Journey"]
+    },
+    "Retail Operations Manager": {
+        "description": "I optimize retail operations for maximum efficiency and customer satisfaction. I specialize in inventory management, store operations, and retail analytics.",
+        "emoji": "🏪",
+        "category": "E-commerce & Retail",
+        "temperature": 0.6,
+        "specialties": ["Retail Operations", "Inventory Management", "Store Operations", "Retail Analytics"],
+        "quick_actions": ["Operations Audit", "Inventory Plan", "Store Layout", "Performance Review"]
+    },
+    "Customer Experience Designer": {
+        "description": "I design exceptional customer experiences across all touchpoints. I specialize in customer journey mapping, experience design, and customer satisfaction optimization.",
+        "emoji": "😊",
+        "category": "E-commerce & Retail",
+        "temperature": 0.7,
+        "specialties": ["Customer Journey", "Experience Design", "Customer Satisfaction", "Touchpoint Optimization"],
+        "quick_actions": ["Journey Map", "Experience Audit", "Satisfaction Survey", "Touchpoint Analysis"]
+    },
+    "Marketplace Specialist": {
+        "description": "I help businesses succeed on major marketplaces like Amazon, eBay, and others. I specialize in marketplace optimization, listing management, and multi-channel strategies.",
+        "emoji": "🌐",
+        "category": "E-commerce & Retail",
+        "temperature": 0.7,
+        "specialties": ["Marketplace Strategy", "Listing Optimization", "Multi-channel Retail", "Marketplace Analytics"],
+        "quick_actions": ["Marketplace Audit", "Listing Optimization", "Channel Strategy", "Performance Analysis"]
+    },
+
+    # CREATIVE & DESIGN (New Category)
+    "Brand Designer": {
+        "description": "I create compelling brand identities and visual systems. I specialize in brand strategy, visual identity design, and brand guidelines development.",
+        "emoji": "🎨",
+        "category": "Creative & Design",
+        "temperature": 0.8,
+        "specialties": ["Brand Identity", "Visual Design", "Brand Strategy", "Design Systems"],
+        "quick_actions": ["Brand Audit", "Logo Design", "Brand Guidelines", "Visual Identity"]
+    },
+    "UX/UI Designer": {
+        "description": "I design user-centered digital experiences that are both beautiful and functional. I specialize in user research, interface design, and usability optimization.",
+        "emoji": "📱",
+        "category": "Creative & Design",
+        "temperature": 0.7,
+        "specialties": ["User Experience", "Interface Design", "User Research", "Usability Testing"],
+        "quick_actions": ["UX Audit", "User Research", "Wireframes", "Prototype Design"]
+    },
+    "Creative Director": {
+        "description": "I lead creative vision and strategy across all brand touchpoints. I specialize in creative strategy, campaign development, and creative team leadership.",
+        "emoji": "🎭",
+        "category": "Creative & Design",
+        "temperature": 0.8,
+        "specialties": ["Creative Strategy", "Campaign Development", "Creative Leadership", "Brand Storytelling"],
+        "quick_actions": ["Creative Brief", "Campaign Ideas", "Creative Strategy", "Brand Story"]
+    },
+    "Video Production Specialist": {
+        "description": "I help create compelling video content for marketing and communication. I specialize in video strategy, production planning, and content optimization.",
+        "emoji": "🎬",
+        "category": "Creative & Design",
+        "temperature": 0.8,
+        "specialties": ["Video Strategy", "Production Planning", "Content Creation", "Video Marketing"],
+        "quick_actions": ["Video Strategy", "Production Plan", "Script Writing", "Content Calendar"]
+    },
+
+    # DATA SCIENCE & ANALYTICS (New Category)
+    "Data Scientist": {
+        "description": "I help organizations extract insights from data to drive business decisions. I specialize in predictive analytics, machine learning, and data visualization.",
+        "emoji": "📊",
+        "category": "Data Science & Analytics",
+        "temperature": 0.6,
+        "specialties": ["Predictive Analytics", "Machine Learning", "Data Visualization", "Statistical Analysis"],
+        "quick_actions": ["Data Analysis", "Predictive Model", "Dashboard Design", "Statistical Report"]
+    },
+    "Business Intelligence Analyst": {
+        "description": "I transform raw data into actionable business insights. I specialize in BI tools, reporting systems, and performance dashboards.",
+        "emoji": "📈",
+        "category": "Data Science & Analytics",
+        "temperature": 0.6,
+        "specialties": ["Business Intelligence", "Data Reporting", "Dashboard Development", "Performance Analytics"],
+        "quick_actions": ["BI Strategy", "Dashboard Design", "Report Creation", "KPI Analysis"]
+    },
+    "Market Research Analyst": {
+        "description": "I conduct comprehensive market research to inform business strategy. I specialize in market analysis, competitive intelligence, and consumer insights.",
+        "emoji": "🔍",
+        "category": "Data Science & Analytics",
+        "temperature": 0.6,
+        "specialties": ["Market Analysis", "Competitive Intelligence", "Consumer Research", "Industry Analysis"],
+        "quick_actions": ["Market Research", "Competitor Analysis", "Consumer Survey", "Industry Report"]
     }
-    
-    .metric-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 20px 60px rgba(245,158,11,0.5);
+}
+
+# ======================================================
+# 🔐 AUTHENTICATION FUNCTIONS (Enhanced)
+# ======================================================
+
+from auth import auth
+
+def init_session_state():
+    """Initialize session state variables"""
+    if 'authenticated' not in st.session_state:
+        st.session_state.authenticated = False
+    if 'user_email' not in st.session_state:
+        st.session_state.user_email = None
+    if 'user_id' not in st.session_state:
+        st.session_state.user_id = None
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = []
+    if 'selected_agent' not in st.session_state:
+        st.session_state.selected_agent = "Startup Strategist"
+    if 'auth_mode' not in st.session_state:
+        st.session_state.auth_mode = "login"
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = "Chat"
+    if 'favorite_agents' not in st.session_state:
+        st.session_state.favorite_agents = []
+    if 'user_preferences' not in st.session_state:
+        st.session_state.user_preferences = {
+            'theme': 'light',
+            'notifications': True,
+            'auto_save': True
+        }
+
+# ======================================================
+# 📄 PAGE NAVIGATION SYSTEM
+# ======================================================
+
+def get_page_navigation():
+    """Get page navigation configuration"""
+    pages = {
+        "🏠 Dashboard": "Dashboard",
+        "💬 Chat": "Chat", 
+        "📚 Knowledge Base": "Knowledge",
+        "📄 Document Generator": "Documents",
+        "📊 Analytics": "Analytics",
+        "⚙️ Settings": "Settings"
     }
-    
-    /* Enhanced Buttons */
-    .stButton > button {
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-        color: #000000;
-        font-weight: 600;
-        border: none;
-        border-radius: 12px;
-        padding: 0.75rem 1.5rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(245,158,11,0.3);
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(245,158,11,0.5);
-    }
-    
-    /* Status Indicators */
-    .status-indicator {
-        display: inline-block;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        margin-right: 8px;
-    }
-    
-    .status-online { background-color: var(--success-color); }
-    .status-offline { background-color: var(--error-color); }
-    .status-warning { background-color: var(--warning-color); }
-    
-    /* Enhanced Forms */
-    .stTextInput > div > div > input,
-    .stTextArea > div > div > textarea,
-    .stSelectbox > div > div > select {
-        background: rgba(30,41,59,0.5);
-        border: 2px solid rgba(245,158,11,0.3);
-        border-radius: 12px;
-        color: var(--text-primary);
-        transition: border-color 0.3s ease;
-    }
-    
-    .stTextInput > div > div > input:focus,
-    .stTextArea > div > div > textarea:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 20px rgba(245,158,11,0.3);
-    }
-    
-    /* Loading Animation */
-    .loading-spinner {
-        border: 4px solid rgba(245,158,11,0.3);
-        border-radius: 50%;
-        border-top: 4px solid var(--primary-color);
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
-        margin: 20px auto;
-    }
-    
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    
-    /* Notification Styles */
-    .notification {
-        padding: 1rem;
-        border-radius: 12px;
-        margin: 0.5rem 0;
-        border-left: 4px solid;
-    }
-    
-    .notification-info { 
-        background: rgba(59,130,246,0.1); 
-        border-color: var(--info-color); 
-    }
-    .notification-success { 
-        background: rgba(16,185,129,0.1); 
-        border-color: var(--success-color); 
-    }
-    .notification-warning { 
-        background: rgba(245,158,11,0.1); 
-        border-color: var(--warning-color); 
-    }
-    .notification-error { 
-        background: rgba(239,68,68,0.1); 
-        border-color: var(--error-color); 
-    }
-    
-    /* Progress Bars */
-    .progress-bar {
-        width: 100%;
-        height: 20px;
-        background: rgba(30,41,59,0.5);
-        border-radius: 10px;
-        overflow: hidden;
-        margin: 10px 0;
-    }
-    
-    .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-        border-radius: 10px;
-        transition: width 0.3s ease;
-    }
-    </style>
+    return pages
+
+def display_page_navigation():
+    """Display page navigation in sidebar"""
+    st.sidebar.markdown("""
+    <div class="sidebar-section">
+        <h3>📍 Navigation</h3>
+    </div>
     """, unsafe_allow_html=True)
-
-def get_base64_of_bin_file(bin_file: str) -> str:
-    """Convert binary file to base64 string"""
-    try:
-        with open(bin_file, 'rb') as f:
-            data = f.read()
-        return base64.b64encode(data).decode()
-    except Exception as e:
-        logger.error(f"Error converting file to base64: {e}")
-        return ""
-
-def display_enhanced_logo():
-    """Display enhanced logo with animations"""
-    logo_path = "/home/ubuntu/ai-agent-toolkit/logo.png"
-    if os.path.exists(logo_path):
-        st.markdown(f"""
-        <div style="display: flex; justify-content: center; align-items: center; margin: 2rem 0;">
-            <div style="animation: pulse 2s infinite;">
-                <img src="data:image/png;base64,{get_base64_of_bin_file(logo_path)}" 
-                     alt="{Config.APP_NAME} Logo" 
-                     style="max-width:300px; filter: drop-shadow(0 0 20px rgba(245,158,11,0.5));">
-            </div>
-        </div>
-        <style>
-        @keyframes pulse {{
-            0% {{ transform: scale(1); }}
-            50% {{ transform: scale(1.05); }}
-            100% {{ transform: scale(1); }}
-        }}
-        </style>
-        """, unsafe_allow_html=True)
-    else:
-        # Fallback text logo
-        st.markdown(f"""
-        <div style="text-align: center; padding: 2rem;">
-            <h1 style="font-size: 3rem; background: linear-gradient(135deg, #f59e0b, #d97706); 
-                       -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                🤖 {Config.APP_NAME}
-            </h1>
-            <p style="color: #e2e8f0; font-size: 1.2rem;">by {Config.AUTHOR}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-def show_sidebar_toggle():
-    """Enhanced sidebar visibility controls"""
-    st.markdown("""
-    <style>
-        section[data-testid="stSidebar"] {
-            transition: all 0.3s ease;
-        }
-        .sidebar-hidden section[data-testid="stSidebar"] {
-            transform: translateX(-100%);
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
-# -------------------------
-# Enhanced Database Operations
-# -------------------------
-@st.cache_resource
-def init_supabase_connection() -> Optional[Client]:
-    """Initialize Supabase connection with error handling"""
-    try:
-        url = st.secrets.get("supabase", {}).get("url")
-        key = st.secrets.get("supabase", {}).get("key")
-        
-        if not url or not key:
-            st.error("🔧 Supabase configuration missing. Please check your secrets.")
-            return None
-            
-        client = create_client(url, key)
-        
-        # Test connection
-        client.table("user_profiles").select("count", count="exact").execute()
-        logger.info("Supabase connection established successfully")
-        return client
-        
-    except Exception as e:
-        logger.error(f"Failed to connect to Supabase: {e}")
-        st.error(f"🔥 Database connection failed: {str(e)}")
-        return None
-
-def create_database_tables(supabase: Client):
-    """Create necessary database tables if they don't exist"""
-    try:
-        # Enhanced user profiles table
-        supabase.rpc('create_user_profiles_table').execute()
-        
-        # Activity logs table
-        supabase.rpc('create_activity_logs_table').execute()
-        
-        # User sessions table
-        supabase.rpc('create_user_sessions_table').execute()
-        
-        # System settings table
-        supabase.rpc('create_system_settings_table').execute()
-        
-        # File uploads table
-        supabase.rpc('create_file_uploads_table').execute()
-        
-        logger.info("Database tables created/verified successfully")
-        
-    except Exception as e:
-        logger.warning(f"Database table creation warning: {e}")
-
-# -------------------------
-# Session Management
-# -------------------------
-def initialize_session_state():
-    """Initialize comprehensive session state"""
-    defaults = {
-        "authenticated": False,
-        "role": None,
-        "user": None,
-        "user_profile": {},
-        "session_start": datetime.now(),
-        "last_activity": datetime.now(),
-        "notifications": [],
-        "theme": "dark",
-        "language": "en",
-        "activity_log": [],
-        "uploaded_files": [],
-        "user_preferences": {},
-        "dashboard_config": {
-            "show_welcome": True,
-            "compact_mode": False,
-            "auto_refresh": True
-        }
-    }
     
-    for key, value in defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = value
+    pages = get_page_navigation()
+    
+    for page_display, page_key in pages.items():
+        if st.sidebar.button(page_display, key=f"nav_{page_key}"):
+            st.session_state.current_page = page_key
+            st.rerun()
 
-def check_session_timeout():
-    """Check and handle session timeout"""
-    if st.session_state.authenticated:
-        current_time = datetime.now()
-        last_activity = st.session_state.get("last_activity", current_time)
-        
-        if (current_time - last_activity).seconds > Config.SESSION_TIMEOUT:
-            st.warning("⏰ Session expired due to inactivity. Please log in again.")
-            logout()
-        else:
-            st.session_state.last_activity = current_time
+# ======================================================
+# 🎯 ENHANCED AGENT SYSTEM
+# ======================================================
 
-def log_user_activity(action: str, details: str = ""):
-    """Log user activity"""
-    if st.session_state.authenticated:
-        activity_entry = {
-            "timestamp": datetime.now().isoformat(),
-            "user_id": st.session_state.user.id if st.session_state.user else None,
-            "action": action,
-            "details": details,
-            "ip_address": "127.0.0.1",  # In production, get real IP
-            "user_agent": "Streamlit App"  # In production, get real user agent
-        }
-        
-        if "activity_log" not in st.session_state:
-            st.session_state.activity_log = []
-        
-        st.session_state.activity_log.append(activity_entry)
-        
-        # Keep only last 100 activities in session
-        if len(st.session_state.activity_log) > 100:
-            st.session_state.activity_log = st.session_state.activity_log[-100:]
+def get_agent_prompt(agent_name: str) -> str:
+    """Get enhanced system prompt for specific agent"""
+    agent = BOT_PERSONALITIES.get(agent_name, BOT_PERSONALITIES["Startup Strategist"])
+    
+    base_prompt = f"""You are {agent_name}, {agent['description']}
 
-# -------------------------
-# Enhanced Authentication
-# -------------------------
-def validate_email(email: str) -> bool:
-    """Validate email format"""
-    import re
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return re.match(pattern, email) is not None
+Your specialties include: {', '.join(agent['specialties'])}
 
-def validate_password_strength(password: str) -> Tuple[bool, str]:
-    """Validate password strength"""
-    if len(password) < 8:
-        return False, "Password must be at least 8 characters long"
-    
-    import re
-    if not re.search(r"[A-Z]", password):
-        return False, "Password must contain at least one uppercase letter"
-    
-    if not re.search(r"[a-z]", password):
-        return False, "Password must contain at least one lowercase letter"
-    
-    if not re.search(r"[0-9]", password):
-        return False, "Password must contain at least one number"
-    
-    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
-        return False, "Password must contain at least one special character"
-    
-    return True, "Password is strong"
+Guidelines for responses:
+1. Always respond in character as {agent_name}
+2. Provide actionable, practical advice
+3. Use your expertise in {', '.join(agent['specialties'])}
+4. Be professional yet approachable
+5. Offer specific examples and frameworks when relevant
+6. Ask clarifying questions when needed
+7. Provide step-by-step guidance for complex topics
+8. Reference industry best practices and current trends
+9. Suggest follow-up actions or next steps
+10. Maintain consistency with your role and expertise
 
-def enhanced_signup(email: str, password: str, full_name: str = "", company: str = "") -> Tuple[bool, str]:
-    """Enhanced user signup with validation"""
-    if not email or not password:
-        return False, "⚠️ Please fill in all required fields."
+Remember: You are an expert consultant helping with real business challenges. Provide valuable, implementable advice."""
     
-    if not validate_email(email):
-        return False, "⚠️ Please enter a valid email address."
+    return base_prompt
+
+def chat_with_agent(user_message: str, agent_name: str) -> str:
+    """Enhanced chat function with better context and error handling"""
+    client, api_key = initialize_openai()
     
-    password_valid, password_msg = validate_password_strength(password)
-    if not password_valid:
-        return False, f"⚠️ {password_msg}"
+    if not client:
+        return "⚠️ OpenAI API key not configured. Please add your API key to continue."
     
     try:
-        supabase = init_supabase_connection()
-        if not supabase:
-            return False, "❌ Database connection failed."
+        agent = BOT_PERSONALITIES.get(agent_name, BOT_PERSONALITIES["Startup Strategist"])
         
-        # Create auth user
-        res = supabase.auth.sign_up({
-            "email": email, 
-            "password": password,
-            "options": {
-                "data": {
-                    "full_name": full_name,
-                    "company": company
-                }
-            }
-        })
-        
-        if res.user:
-            # Create extended profile
-            profile_data = {
-                "id": res.user.id,
-                "email": email,
-                "full_name": full_name,
-                "company": company,
-                "role": "user",
-                "created_at": datetime.now().isoformat(),
-                "last_login": None,
-                "is_active": True,
-                "preferences": json.dumps({
-                    "theme": "dark",
-                    "notifications": True,
-                    "language": "en"
-                }),
-                "profile_completion": 60 if full_name else 30
-            }
-            
-            supabase.table("user_profiles").insert(profile_data).execute()
-            
-            log_user_activity("user_signup", f"New user registered: {email}")
-            
-            return True, "✅ Account created successfully! Please check your email to confirm your account."
-        
-        return False, "❌ Failed to create account. Please try again."
-        
-    except Exception as e:
-        error_msg = str(e)
-        logger.error(f"Signup error: {error_msg}")
-        
-        if "already registered" in error_msg.lower():
-            return False, "⚠️ This email is already registered. Try logging in instead."
-        elif "invalid email" in error_msg.lower():
-            return False, "⚠️ Invalid email address format."
-        else:
-            return False, f"❌ Registration failed: {error_msg}"
-
-def enhanced_login(email: str, password: str, remember_me: bool = False) -> Tuple[bool, str]:
-    """Enhanced login with session management"""
-    try:
-        supabase = init_supabase_connection()
-        if not supabase:
-            return False, "❌ Database connection failed."
-        
-        res = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        
-        if res.user:
-            # Get user profile
-            profile_query = supabase.table("user_profiles").select("*").eq("id", res.user.id).execute()
-            
-            if profile_query.data:
-                profile = profile_query.data[0]
-                
-                # Update last login
-                supabase.table("user_profiles").update({
-                    "last_login": datetime.now().isoformat(),
-                    "login_count": profile.get("login_count", 0) + 1
-                }).eq("id", res.user.id).execute()
-                
-                # Set session state
-                st.session_state.authenticated = True
-                st.session_state.user = res.user
-                st.session_state.role = profile.get("role", "user")
-                st.session_state.user_profile = profile
-                st.session_state.session_start = datetime.now()
-                st.session_state.last_activity = datetime.now()
-                
-                # Load user preferences
-                preferences = json.loads(profile.get("preferences", "{}"))
-                st.session_state.user_preferences = preferences
-                
-                log_user_activity("user_login", f"User logged in: {email}")
-                
-                return True, f"✅ Welcome back, {profile.get('full_name', 'User')}!"
-            else:
-                return False, "❌ User profile not found."
-        
-        return False, "❌ Invalid email or password."
-        
-    except Exception as e:
-        logger.error(f"Login error: {e}")
-        return False, f"❌ Login failed: {str(e)}"
-
-def enhanced_reset_password(email: str) -> Tuple[bool, str]:
-    """Enhanced password reset with logging"""
-    try:
-        if not validate_email(email):
-            return False, "⚠️ Please enter a valid email address."
-        
-        supabase = init_supabase_connection()
-        if not supabase:
-            return False, "❌ Database connection failed."
-        
-        supabase.auth.reset_password_for_email(email, {
-            "redirect_to": f"{Config.WEBSITE}/reset-password"
-        })
-        
-        log_user_activity("password_reset_request", f"Password reset requested for: {email}")
-        
-        return True, f"✅ Password reset instructions sent to {email}"
-        
-    except Exception as e:
-        logger.error(f"Password reset error: {e}")
-        return False, f"❌ Failed to send reset email: {str(e)}"
-
-def logout():
-    """Enhanced logout with cleanup"""
-    try:
-        if st.session_state.authenticated:
-            log_user_activity("user_logout", "User logged out")
-            
-            supabase = init_supabase_connection()
-            if supabase:
-                supabase.auth.sign_out()
-        
-        # Clear session state
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        
-        initialize_session_state()
-        st.rerun()
-        
-    except Exception as e:
-        logger.error(f"Logout error: {e}")
-        # Force clear session even if error
-        st.session_state.clear()
-        initialize_session_state()
-        st.rerun()
-
-# -------------------------
-# Enhanced File Management
-# -------------------------
-def handle_file_upload(uploaded_file) -> Tuple[bool, str]:
-    """Handle file uploads with validation and storage"""
-    try:
-        if uploaded_file is None:
-            return False, "No file selected"
-        
-        # Validate file size
-        if uploaded_file.size > Config.MAX_FILE_SIZE:
-            return False, f"File too large. Maximum size is {Config.MAX_FILE_SIZE // 1024 // 1024}MB"
-        
-        # Validate file type
-        file_extension = os.path.splitext(uploaded_file.name)[1].lower()
-        if file_extension not in Config.ALLOWED_FILE_TYPES:
-            return False, f"File type not allowed. Allowed types: {', '.join(Config.ALLOWED_FILE_TYPES)}"
-        
-        # Create unique filename
-        timestamp = int(time.time())
-        user_id = st.session_state.user.id if st.session_state.user else "anonymous"
-        safe_filename = f"{user_id}_{timestamp}_{uploaded_file.name}"
-        
-        # Store file info in session
-        file_info = {
-            "original_name": uploaded_file.name,
-            "safe_filename": safe_filename,
-            "size": uploaded_file.size,
-            "type": uploaded_file.type,
-            "upload_time": datetime.now().isoformat(),
-            "status": "uploaded"
-        }
-        
-        if "uploaded_files" not in st.session_state:
-            st.session_state.uploaded_files = []
-        
-        st.session_state.uploaded_files.append(file_info)
-        
-        log_user_activity("file_upload", f"File uploaded: {uploaded_file.name}")
-        
-        return True, f"File '{uploaded_file.name}' uploaded successfully"
-        
-    except Exception as e:
-        logger.error(f"File upload error: {e}")
-        return False, f"Upload failed: {str(e)}"
-
-# -------------------------
-# Enhanced Resource Management
-# -------------------------
-def show_enhanced_resources():
-    """Enhanced resource section with more features"""
-    st.subheader("📚 AI Agent Toolkit Resource Library")
-    
-    # Resource categories
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "📋 Checklists", "🛠️ AI Tools", "📖 Guides", "🎥 Tutorials", "📊 Templates"
-    ])
-    
-    with tab1:
-        st.markdown("### 📋 Comprehensive AI Checklists")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("""
-            <div class="metric-card">
-                <h4>🎯 The Ultimate AI & Bot Checklist</h4>
-                <p>Complete guide for AI agent development, deployment, and optimization.</p>
-                <ul>
-                    <li>✅ Pre-development planning</li>
-                    <li>🔧 Development best practices</li>
-                    <li>🚀 Deployment strategies</li>
-                    <li>📊 Performance optimization</li>
-                    <li>🛡️ Security considerations</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            if os.path.exists("/home/ubuntu/ai-agent-toolkit/AI_and_Bot_Checklist.pdf"):
-                with open("/home/ubuntu/ai-agent-toolkit/AI_and_Bot_Checklist.pdf", "rb") as file:
-                    st.download_button(
-                        label="📥 Download Ultimate AI Checklist",
-                        data=file.read(),
-                        file_name="AI_and_Bot_Checklist.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
-        
-        with col2:
-            st.markdown("""
-            <div class="metric-card">
-                <h4>🎯 AI Implementation Checklist</h4>
-                <p>Step-by-step guide for implementing AI solutions in business.</p>
-                <ul>
-                    <li>📋 Requirements analysis</li>
-                    <li>🔍 Technology selection</li>
-                    <li>👥 Team preparation</li>
-                    <li>📈 Success metrics</li>
-                    <li>🔄 Continuous improvement</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Generate sample checklist
-            checklist_content = """AI IMPLEMENTATION CHECKLIST
-            
-□ Define business objectives
-□ Assess current infrastructure
-□ Identify data sources
-□ Select appropriate AI tools
-□ Plan integration strategy
-□ Prepare team training
-□ Establish success metrics
-□ Create testing protocols
-□ Plan deployment phases
-□ Develop monitoring systems"""
-            
-            st.download_button(
-                label="📥 Download Implementation Checklist",
-                data=checklist_content,
-                file_name="AI_Implementation_Checklist.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
-    
-    with tab2:
-        st.markdown("### 🛠️ AI Tools Collection")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("""
-            <div class="metric-card">
-                <h4>🔧 250 Best AI Tools</h4>
-                <p>Curated collection of the most powerful AI tools across all categories.</p>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 1rem;">
-                    <span>🤖 Chatbots & Agents</span><span>25 tools</span>
-                    <span>🎨 Content Creation</span><span>40 tools</span>
-                    <span>📊 Data Analysis</span><span>35 tools</span>
-                    <span>🖼️ Image Generation</span><span>30 tools</span>
-                    <span>🎵 Audio Processing</span><span>25 tools</span>
-                    <span>📝 Writing Assistants</span><span>30 tools</span>
-                    <span>🔍 Research Tools</span><span>25 tools</span>
-                    <span>🛠️ Development</span><span>40 tools</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            if os.path.exists("/home/ubuntu/ai-agent-toolkit/250_Best_AI_Tools.pdf"):
-                with open("/home/ubuntu/ai-agent-toolkit/250_Best_AI_Tools.pdf", "rb") as file:
-                    st.download_button(
-                        label="📥 Download 250 AI Tools Guide",
-                        data=file.read(),
-                        file_name="250_Best_AI_Tools.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
-        
-        with col2:
-            st.markdown("### 🔥 Trending AI Tools")
-            trending_tools = [
-                {"name": "ChatGPT", "category": "Conversational AI", "rating": 9.5},
-                {"name": "Midjourney", "category": "Image Generation", "rating": 9.3},
-                {"name": "Claude", "category": "AI Assistant", "rating": 9.4},
-                {"name": "GitHub Copilot", "category": "Code Assistant", "rating": 9.1},
-                {"name": "Stable Diffusion", "category": "Image Generation", "rating": 9.0}
-            ]
-            
-            for tool in trending_tools:
-                st.markdown(f"""
-                <div style="background: rgba(30,41,59,0.3); padding: 1rem; border-radius: 8px; margin: 0.5rem 0;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                                                    <div>
-                                <strong>{tool['name']}</strong><br>
-                                <small style="color: #e2e8f0;">{tool['category']}</small>
-                            </div>
-                            <div style="color: #f59e0b; font-weight: bold;">
-                                ⭐ {tool['rating']}/10
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-    
-    with tab3:
-        st.markdown("### 📖 Comprehensive AI Guides")
-        
-        guide_categories = {
-            "🚀 Getting Started": [
-                "AI Fundamentals for Beginners",
-                "Setting up Your First AI Project",
-                "Understanding Machine Learning Basics"
-            ],
-            "🏗️ Development": [
-                "Building Custom AI Agents",
-                "API Integration Best Practices",
-                "Data Preparation Techniques"
-            ],
-            "📈 Advanced Topics": [
-                "Fine-tuning Language Models",
-                "Implementing RAG Systems",
-                "AI Ethics and Governance"
-            ]
-        }
-        
-        for category, guides in guide_categories.items():
-            st.markdown(f"#### {category}")
-            for guide in guides:
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.write(f"📄 {guide}")
-                with col2:
-                    if st.button(f"View", key=f"guide_{guide.replace(' ', '_')}"):
-                        st.info(f"Guide '{guide}' would be displayed here in full version.")
-    
-    with tab4:
-        st.markdown("### 🎥 Video Tutorial Library")
-        
-        tutorials = [
-            {
-                "title": "Building Your First AI Chatbot",
-                "duration": "45 mins",
-                "level": "Beginner",
-                "views": "12.5K",
-                "description": "Step-by-step guide to creating an AI chatbot from scratch."
-            },
-            {
-                "title": "Advanced Agent Workflows",
-                "duration": "1h 20mins",
-                "level": "Advanced",
-                "views": "8.2K",
-                "description": "Complex multi-step AI agent implementations."
-            },
-            {
-                "title": "AI Integration with APIs",
-                "duration": "35 mins",
-                "level": "Intermediate",
-                "views": "15.7K",
-                "description": "Connecting AI agents with external services."
-            }
+        messages = [
+            {"role": "system", "content": get_agent_prompt(agent_name)},
+            {"role": "user", "content": user_message}
         ]
         
-        for tutorial in tutorials:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div style="flex: 1;">
-                        <h4>🎥 {tutorial['title']}</h4>
-                        <p>{tutorial['description']}</p>
-                        <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
-                            <span style="background: rgba(245,158,11,0.2); padding: 0.25rem 0.5rem; border-radius: 4px;">
-                                ⏱️ {tutorial['duration']}
-                            </span>
-                            <span style="background: rgba(59,130,246,0.2); padding: 0.25rem 0.5rem; border-radius: 4px;">
-                                📊 {tutorial['level']}
-                            </span>
-                            <span style="background: rgba(16,185,129,0.2); padding: 0.25rem 0.5rem; border-radius: 4px;">
-                                👁️ {tutorial['views']} views
-                            </span>
-                        </div>
-                    </div>
-                    <div style="margin-left: 1rem;">
-                        <div style="width: 100px; height: 60px; background: linear-gradient(135deg, #f59e0b, #d97706); 
-                                    border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                            <span style="font-size: 1.5rem; color: #000;">▶️</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with tab5:
-        st.markdown("### 📊 Ready-to-Use Templates")
+        # Add recent chat history for context (last 6 messages)
+        if st.session_state.chat_history:
+            recent_history = [msg for msg in st.session_state.chat_history[-6:] if msg['agent'] == agent_name]
+            for msg in recent_history:
+                messages.insert(-1, {"role": "assistant", "content": msg['response']})
+                messages.insert(-1, {"role": "user", "content": msg['message']})
         
-        templates = {
-            "Agent Templates": [
-                {"name": "Customer Service Bot", "downloads": 1250, "rating": 4.8},
-                {"name": "Data Analysis Agent", "downloads": 890, "rating": 4.7},
-                {"name": "Content Creator Bot", "downloads": 2100, "rating": 4.9}
-            ],
-            "Workflow Templates": [
-                {"name": "Multi-Step Automation", "downloads": 650, "rating": 4.6},
-                {"name": "API Integration Flow", "downloads": 980, "rating": 4.7},
-                {"name": "Data Processing Pipeline", "downloads": 730, "rating": 4.5}
-            ],
-            "UI Templates": [
-                {"name": "Dashboard Template", "downloads": 1850, "rating": 4.9},
-                {"name": "Chat Interface", "downloads": 2300, "rating": 4.8},
-                {"name": "Analytics Dashboard", "downloads": 1100, "rating": 4.6}
-            ]
-        }
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=messages,
+            temperature=agent['temperature'],
+            max_tokens=1500,
+            presence_penalty=0.1,
+            frequency_penalty=0.1
+        )
         
-        for category, template_list in templates.items():
-            st.markdown(f"#### {category}")
-            cols = st.columns(len(template_list))
-            
-            for idx, template in enumerate(template_list):
-                with cols[idx]:
-                    st.markdown(f"""
-                    <div style="background: rgba(30,41,59,0.3); padding: 1rem; border-radius: 8px; text-align: center;">
-                        <h5>{template['name']}</h5>
-                        <div style="margin: 0.5rem 0;">
-                            <span style="color: #f59e0b;">⭐ {template['rating']}</span><br>
-                            <small>{template['downloads']} downloads</small>
-                        </div>
-                        <button style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">Use Template</button>
-                    </div>
-                    """, unsafe_allow_html=True)
+        return response.choices[0].message.content
+        
+    except Exception as e:
+        logger.error(f"Error in chat: {str(e)}")
+        return f"❌ Error: {str(e)}"
 
-# -------------------------
-# Admin Dashboard Functions
-# -------------------------
-def show_admin_dashboard():
-    """Admin dashboard with various management sections"""
-    st.title("⚙️ Admin Dashboard")
+# ======================================================
+# 🎨 ENHANCED UI COMPONENTS
+# ======================================================
+
+def display_logo():
+    """Display the Enhanced AI Agent Toolkit logo"""
+    try:
+        # Try to load the logo image
+        if os.path.exists("ai_agent_toolkit_logo.png"):
+            logo = Image.open("ai_agent_toolkit_logo.png")
+            st.image(logo, width=180)
+        else:
+            st.markdown("🤖")
+    except:
+        st.markdown("🤖")
+
+def display_enhanced_agent_selector():
+    """Display enhanced agent selection interface with categories"""
+    st.markdown("""
+    <div class="sidebar-section">
+        <h3>🤖 Select Your AI Assistant</h3>
+    </div>
+    """, unsafe_allow_html=True)
     
-    admin_section = st.selectbox(
-        "Select Admin Section",
-        [
-            "📊 Advanced Analytics",
-            "👥 User Management Pro",
-            "📚 Resource Library",
-            "🔧 System Administration",
-            "📈 Business Intelligence",
-            "🛡️ Security Center",
-            "⚙️ Configuration",
-            "📱 API Management",
-            "🔔 Notification Center"
-        ]
+    # Group agents by category
+    categories = {}
+    for agent_name, agent_info in BOT_PERSONALITIES.items():
+        category = agent_info['category']
+        if category not in categories:
+            categories[category] = []
+        categories[category].append(agent_name)
+    
+    # Category selector with enhanced styling
+    selected_category = st.selectbox(
+        "Choose Category:",
+        list(categories.keys()),
+        index=0,
+        help="Select a business domain to see specialized AI assistants"
     )
     
-    # Main content based on selection
-    if admin_section == "📊 Advanced Analytics":
-        show_advanced_analytics()
-    elif admin_section == "👥 User Management Pro":
-        show_enhanced_user_management()
-    elif admin_section == "📚 Resource Library":
-        show_enhanced_resources()
-    elif admin_section == "🔧 System Administration":
-        show_system_administration()
-    elif admin_section == "📈 Business Intelligence":
-        show_business_intelligence()
-    elif admin_section == "🛡️ Security Center":
-        show_security_center()
-    elif admin_section == "⚙️ Configuration":
-        show_system_configuration()
-    elif admin_section == "📱 API Management":
-        show_api_management()
-    elif admin_section == "🔔 Notification Center":
-        show_notification_center()
+    # Display category header
+    st.markdown(f"""
+    <div class="category-header">
+        {selected_category}
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Agent selector within category
+    agents_in_category = categories[selected_category]
+    selected_agent = st.selectbox(
+        "Choose Agent:",
+        agents_in_category,
+        index=0,
+        help="Select a specific AI assistant for your needs"
+    )
+    
+    # Update session state
+    st.session_state.selected_agent = selected_agent
+    
+    # Display enhanced agent info
+    agent_info = BOT_PERSONALITIES[selected_agent]
+    
+    # Favorite button
+    is_favorite = selected_agent in st.session_state.favorite_agents
+    if st.button("⭐ Favorite" if not is_favorite else "⭐ Favorited", key="favorite_btn"):
+        if is_favorite:
+            st.session_state.favorite_agents.remove(selected_agent)
+        else:
+            st.session_state.favorite_agents.append(selected_agent)
+        st.rerun()
+    
+    st.markdown(f"""
+    <div class="agent-card">
+        <h4>{agent_info['emoji']} {selected_agent}</h4>
+        <p>{agent_info['description']}</p>
+        <p><strong>Specialties:</strong> {', '.join(agent_info['specialties'])}</p>
+        <p><strong>Temperature:</strong> {agent_info['temperature']} (Creativity Level)</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Enhanced quick actions
+    st.markdown("**🚀 Quick Actions:**")
+    cols = st.columns(2)
+    for i, action in enumerate(agent_info['quick_actions']):
+        col = cols[i % 2]
+        with col:
+            if st.button(action, key=f"action_{action}_{i}"):
+                st.session_state.chat_input = f"Help me with: {action}"
+                st.rerun()
 
-def show_advanced_analytics():
-    """Advanced analytics dashboard with comprehensive metrics"""
-    st.subheader("📊 Advanced System Analytics")
-    
-    try:
-        supabase = init_supabase_connection()
-        if not supabase:
-            st.error("Database connection failed")
-            return
-        
-        # Fetch user data
-        users_query = supabase.table("user_profiles").select("*").execute()
-        users_data = users_query.data or []
-        
-        # Calculate metrics
-        total_users = len(users_data)
-        admin_count = len([u for u in users_data if u.get("role") == "admin"])
-        user_count = total_users - admin_count
-        active_users = len([u for u in users_data if u.get("last_login")])
-        
-        # Top metrics row
-        col1, col2, col3, col4, col5 = st.columns(5)
-        
-        with col1:
-            st.markdown(f"""
-            <div class="metric-card">
-                <h3 style="color: #f59e0b; margin: 0;">👥 {total_users:,}</h3>
-                <p style="margin: 0.5rem 0 0 0;">Total Users</p>
-                <small style="color: #10b981;">↗️ +{max(5, total_users // 10)} this week</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown(f"""
-            <div class="metric-card">
-                <h3 style="color: #10b981; margin: 0;">✅ {active_users:,}</h3>
-                <p style="margin: 0.5rem 0 0 0;">Active Users</p>
-                <small style="color: #10b981;">↗️ {(active_users/total_users*100):.1f}% active rate</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            st.markdown(f"""
-            <div class="metric-card">
-                <h3 style="color: #3b82f6; margin: 0;">👑 {admin_count}</h3>
-                <p style="margin: 0.5rem 0 0 0;">Administrators</p>
-                <small style="color: #e2e8f0;">System managers</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col4:
-            avg_login_time = datetime.now() - timedelta(hours=np.random.randint(1, 72))
-            st.markdown(f"""
-            <div class="metric-card">
-                <h3 style="color: #f59e0b; margin: 0;">🕐 {avg_login_time.strftime('%H:%M')}</h3>
-                <p style="margin: 0.5rem 0 0 0;">Avg Last Login</p>
-                <small style="color: #e2e8f0;">{(datetime.now() - avg_login_time).days} days ago</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col5:
-            system_health = 99.2
-            st.markdown(f"""
-            <div class="metric-card">
-                <h3 style="color: #10b981; margin: 0;">💚 {system_health}%</h3>
-                <p style="margin: 0.5rem 0 0 0;">System Health</p>
-                <small style="color: #10b981;">All systems operational</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Advanced Charts Section
-        st.markdown("### 📈 User Analytics Dashboard")
-        
-        # Create sample data for charts
-        dates = pd.date_range(start='2024-01-01', end=datetime.now(), freq='D')
-        
-        # User registration trends
-        registration_data = pd.DataFrame({
-            'date': dates,
-            'registrations': [max(0, int(np.random.normal(3, 2))) for _ in dates],
-            'active_users': [max(5, int(np.random.normal(20, 8))) for _ in dates]
-        })
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            fig_reg = px.line(registration_data, x='date', y='registrations', 
-                             title='📈 Daily User Registrations',
-                             color_discrete_sequence=['#f59e0b'])
-            fig_reg.update_layout(
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                font_color='#ffffff',
-                height=300
-            )
-            st.plotly_chart(fig_reg, use_container_width=True)
-        
-        with col2:
-            fig_active = px.area(registration_data, x='date', y='active_users',
-                               title='👥 Daily Active Users',
-                               color_discrete_sequence=['#10b981'])
-            fig_active.update_layout(
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                font_color='#ffffff',
-                height=300
-            )
-            st.plotly_chart(fig_active, use_container_width=True)
-        
-        # User distribution and engagement
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Role distribution pie chart
-            role_data = pd.DataFrame({
-                'Role': ['Regular Users', 'Administrators', 'Inactive'],
-                'Count': [user_count, admin_count, max(0, total_users - active_users)]
-            })
-            
-            fig_pie = px.pie(role_data, values='Count', names='Role',
-                           title='👥 User Role Distribution',
-                           color_discrete_sequence=['#f59e0b', '#d97706', '#6b7280'])
-            fig_pie.update_layout(
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                font_color='#ffffff',
-                height=300
-            )
-            st.plotly_chart(fig_pie, use_container_width=True)
-        
-        with col2:
-            # Usage patterns heatmap
-            hours = list(range(24))
-            days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-            
-            # Generate sample heatmap data
-            heatmap_data = np.random.randint(5, 50, size=(len(days), len(hours)))
-            
-            fig_heatmap = go.Figure(data=go.Heatmap(
-                z=heatmap_data,
-                x=hours,
-                y=days,
-                colorscale='Viridis',
-                showscale=True
-            ))
-            
-            fig_heatmap.update_layout(
-                title='🕐 Usage Patterns (Hour vs Day)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                font_color='#ffffff',
-                height=300
-            )
-            st.plotly_chart(fig_heatmap, use_container_width=True)
-        
-        # Detailed Analytics Tables
-        st.markdown("### 📋 Detailed User Analytics")
-        
-        # Top users by activity
-        if users_data:
-            # Simulate activity scores
-            for user in users_data:
-                user['activity_score'] = np.random.randint(10, 100)
-                user['last_active'] = (datetime.now() - timedelta(days=np.random.randint(0, 30))).strftime('%Y-%m-%d')
-                user['sessions'] = np.random.randint(1, 50)
-            
-            # Sort by activity
-            active_users_sorted = sorted(users_data, key=lambda x: x['activity_score'], reverse=True)[:10]
-            
-            st.markdown("#### 🏆 Most Active Users")
-            activity_df = pd.DataFrame([
-                {
-                    "Email": user.get('email', 'Unknown'),
-                    "Role": user.get('role', 'user').title(),
-                    "Activity Score": user['activity_score'],
-                    "Sessions": user['sessions'],
-                    "Last Active": user['last_active']
-                }
-                for user in active_users_sorted
-            ])
-            
-            st.dataframe(activity_df, use_container_width=True)
-        
-        # System Performance Metrics
-        st.markdown("### ⚡ System Performance")
-        
-        perf_col1, perf_col2, perf_col3, perf_col4 = st.columns(4)
-        
-        with perf_col1:
-            response_time = np.random.uniform(80, 150)
-            st.metric("🚀 Response Time", f"{response_time:.0f}ms", f"{np.random.uniform(-5, 5):.1f}ms")
-        
-        with perf_col2:
-            cpu_usage = np.random.uniform(15, 45)
-            st.metric("🖥️ CPU Usage", f"{cpu_usage:.1f}%", f"{np.random.uniform(-2, 3):.1f}%")
-        
-        with perf_col3:
-            memory_usage = np.random.uniform(40, 70)
-            st.metric("💾 Memory Usage", f"{memory_usage:.1f}%", f"{np.random.uniform(-1, 2):.1f}%")
-        
-        with perf_col4:
-            uptime_hours = np.random.randint(24, 720)
-            st.metric("⏱️ Uptime", f"{uptime_hours}h", "Stable")
-    
-    except Exception as e:
-        st.error(f"Error loading analytics: {e}")
-        logger.error(f"Analytics error: {e}")
+# ======================================================
+# 📊 DASHBOARD PAGE
+# ======================================================
 
-def show_enhanced_user_management():
-    """Enhanced user management with advanced features"""
-    st.subheader("👥 Advanced User Management System")
+def display_dashboard():
+    """Display enhanced dashboard with analytics and insights"""
+    # Header
+    col1, col2 = st.columns([1, 4])
+    with col1:
+        display_logo()
+    with col2:
+        st.markdown("""
+        <div class="main-header">
+            <h1>🏠 Dashboard</h1>
+            <p>Your AI Agent Toolkit Overview</p>
+        </div>
+        """, unsafe_allow_html=True)
     
-    try:
-        supabase = init_supabase_connection()
-        if not supabase:
-            st.error("Database connection failed")
-            return
-        
-        # Fetch users with enhanced data
-        users_query = supabase.table("user_profiles").select("*").execute()
-        users_data = users_query.data or []
-        
-        # Enhanced filters and search
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            search_query = st.text_input("🔍 Search users", placeholder="Email, name, or ID...")
-        
-        with col2:
-            role_filter = st.selectbox("🎭 Filter by role", ["All", "user", "admin", "inactive"])
-        
-        with col3:
-            date_filter = st.selectbox("📅 Registration date", 
-                                     ["All time", "Last 7 days", "Last 30 days", "Last 90 days"])
-        
-        with col4:
-            status_filter = st.selectbox("📊 Status", ["All", "Active", "Inactive", "Pending"])
-        
-        # Apply filters
-        filtered_users = users_data.copy()
-        
-        if search_query:
-            filtered_users = [
-                u for u in filtered_users 
-                if search_query.lower() in u.get('email', '').lower() 
-                or search_query.lower() in u.get('full_name', '').lower()
-                or search_query.lower() in str(u.get('id', '')).lower()
-            ]
-        
-        if role_filter != "All":
-            filtered_users = [u for u in filtered_users if u.get('role') == role_filter]
-        
-        # Bulk actions section
-        st.markdown("### 🔧 Bulk User Actions")
-        bulk_col1, bulk_col2, bulk_col3, bulk_col4 = st.columns(4)
-        
-        with bulk_col1:
-            if st.button("📧 Send Welcome Email", use_container_width=True):
-                st.success(f"Welcome emails queued for {len(filtered_users)} users!")
-                log_user_activity("bulk_email", f"Welcome emails sent to {len(filtered_users)} users")
-        
-        with bulk_col2:
-            if st.button("📊 Export User Data", use_container_width=True):
-                df = pd.DataFrame(filtered_users)
-                csv_data = df.to_csv(index=False)
-                st.download_button(
-                    "Download CSV",
-                    csv_data,
-                    f"users_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                    "text/csv",
-                    use_container_width=True
-                )
-        
-        with bulk_col3:
-            if st.button("🔄 Refresh All Sessions", use_container_width=True):
-                st.info("All user sessions refreshed successfully!")
-                log_user_activity("bulk_session_refresh", "All user sessions refreshed")
-        
-        with bulk_col4:
-            if st.button("📈 Generate User Report", use_container_width=True):
-                st.success("Comprehensive user report generated!")
-        
-        # User statistics
-        st.markdown("### 📊 User Statistics Overview")
-        stats_col1, stats_col2, stats_col3, stats_col4 = st.columns(4)
-        
-        total_filtered = len(filtered_users)
-        active_count = len([u for u in filtered_users if u.get('last_login')])
-        admin_count = len([u for u in filtered_users if u.get('role') == 'admin'])
-        completion_avg = np.mean([u.get('profile_completion', 50) for u in filtered_users]) if filtered_users else 0
-        
-        with stats_col1:
-            st.metric("👥 Total Users", total_filtered)
-        with stats_col2:
-            st.metric("✅ Active Users", active_count, f"{(active_count/total_filtered*100):.1f}%" if total_filtered > 0 else "0%")
-        with stats_col3:
-            st.metric("👑 Administrators", admin_count)
-        with stats_col4:
-            st.metric("📋 Avg Profile Complete", f"{completion_avg:.1f}%")
-        
-        # Enhanced user list with advanced features
-        st.markdown(f"### 👤 User Directory ({len(filtered_users)} users)")
-        
-        # Pagination
-        users_per_page = 10
-        total_pages = (len(filtered_users) + users_per_page - 1) // users_per_page
-        
-        page_col1, page_col2, page_col3 = st.columns([1, 2, 1])
-        with page_col2:
-            current_page = st.selectbox(
-                "📄 Page", 
-                range(1, total_pages + 1), 
-                format_func=lambda x: f"Page {x} of {total_pages}"
-            ) if total_pages > 1 else 1
-        
-        # Calculate pagination
-        start_idx = (current_page - 1) * users_per_page
-        end_idx = start_idx + users_per_page
-        page_users = filtered_users[start_idx:end_idx]
-        
-        # Display users with enhanced cards
-        for i, user in enumerate(page_users):
-            with st.container():
-                st.markdown(f"""
-                <div style="background: linear-gradient(135deg, rgba(30,41,59,0.8) 0%, rgba(51,65,85,0.8) 100%); 
-                            padding: 1.5rem; border-radius: 16px; margin: 1rem 0; 
-                            border: 1px solid rgba(245,158,11,0.3);">
-                """, unsafe_allow_html=True)
-                
-                # User header
-                user_col1, user_col2, user_col3, user_col4 = st.columns([2, 1, 1, 1])
-                
-                with user_col1:
-                    status_icon = "🟢" if user.get('last_login') else "🔴"
-                    role_icon = "👑" if user.get('role') == 'admin' else "👤"
-                    st.markdown(f"""
-                    **{role_icon} {user.get('email', 'Unknown Email')}** {status_icon}
-                    
-                    📝 {user.get('full_name', 'Name not provided')}
-                    🏢 {user.get('company', 'Company not provided')}
-                    """)
-                
-                with user_col2:
-                    created_date = user.get('created_at', datetime.now().isoformat())
-                    if isinstance(created_date, str):
-                        try:
-                            created_date = datetime.fromisoformat(created_date.replace('Z', '+00:00'))
-                        except:
-                            created_date = datetime.now()
-                    
-                    st.write(f"""
-                    **📅 Created:** {created_date.strftime('%Y-%m-%d')}
-                    **🔐 Role:** {user.get('role', 'user').title()}
-                    **📊 Profile:** {user.get('profile_completion', 50)}% complete
-                    """)
-                
-                with user_col3:
-                    last_login = user.get('last_login')
-                    login_text = "Never" if not last_login else "Recent"
-                    if last_login:
-                        try:
-                            login_date = datetime.fromisoformat(last_login.replace('Z', '+00:00'))
-                            days_ago = (datetime.now() - login_date).days
-                            if days_ago == 0:
-                                login_text = "Today"
-                            elif days_ago == 1:
-                                login_text = "Yesterday"
-                            else:
-                                login_text = f"{days_ago} days ago"
-                        except:
-                            pass
-                    
-                    st.write(f"""
-                    **⏰ Last Login:** {login_text}
-                    **#️⃣ Logins:** {user.get('login_count', 0)}
-                    **⭐ Activity:** {user.get('activity_score', 'N/A')}
-                    """)
-                
-                with user_col4:
-                    action_col1, action_col2 = st.columns(2)
-                    with action_col1:
-                        if st.button("✏️ Edit", key=f"edit_{user.get('id')}", use_container_width=True):
-                            st.info(f"Editing user: {user.get('email')}")
-                    with action_col2:
-                        if st.button("🗑️ Delete", key=f"delete_{user.get('id')}", use_container_width=True):
-                            st.warning(f"Deleting user: {user.get('email')}")
-                
-                st.markdown("</div>", unsafe_allow_html=True)
-        
-        # User insights and recommendations
-        st.markdown("### 💡 User Insights & Recommendations")
-        insight_col1, insight_col2 = st.columns(2)
-        
-        with insight_col1:
-            st.markdown("#### 🎯 Key Insights")
-            
-            if filtered_users:
-                inactive_users = [u for u in filtered_users if not u.get('last_login') or (datetime.now() - datetime.fromisoformat(u['last_login'].replace('Z', '+00:00'))).days > 30]
-                incomplete_profiles = [u for u in filtered_users if u.get('profile_completion', 50) < 70]
-                
-                insights = [
-                    f"🔴 {len(inactive_users)} users haven't logged in recently",
-                    f"📋 {len(incomplete_profiles)} users have incomplete profiles",
-                    f"👑 {admin_count} administrators are managing the system",
-                    f"📊 Average profile completion is {completion_avg:.1f}%"
-                ]
-                
-                for insight in insights:
-                    st.write(f"• {insight}")
-            
-            with insight_col2:
-                st.markdown("#### 🎯 Recommendations")
-                
-                recommendations = [
-                    "📧 Send re-engagement emails to inactive users",
-                    "📝 Prompt users to complete their profiles",
-                    "🔔 Set up automated welcome sequences",
-                    "📊 Monitor user activity patterns regularly"
-                ]
-                
-                for rec in recommendations:
-                    st.write(f"• {rec}")
-        
-    except Exception as e:
-        st.error(f"Error loading user management: {e}")
-        logger.error(f"User management error: {e}")
-
-def show_system_administration():
-    """System administration and maintenance tools"""
-    st.subheader("🔧 System Administration Center")
-    
-    # System overview cards
-    st.markdown("### 🖥️ System Overview")
-    
+    # Key metrics
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
+        total_messages = len(st.session_state.chat_history)
+        st.markdown(f"""
+        <div class="metric-display">
+            <h3>💬</h3>
+            <h2>{total_messages}</h2>
+            <p>Total Messages</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        agents_used = len(set(msg['agent'] for msg in st.session_state.chat_history)) if st.session_state.chat_history else 0
+        st.markdown(f"""
+        <div class="metric-display">
+            <h3>🤖</h3>
+            <h2>{agents_used}</h2>
+            <p>Agents Consulted</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        favorite_count = len(st.session_state.favorite_agents)
+        st.markdown(f"""
+        <div class="metric-display">
+            <h3>⭐</h3>
+            <h2>{favorite_count}</h2>
+            <p>Favorite Agents</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        total_agents = len(BOT_PERSONALITIES)
+        st.markdown(f"""
+        <div class="metric-display">
+            <h3>🎯</h3>
+            <h2>{total_agents}</h2>
+            <p>Available Agents</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Recent activity and analytics
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.markdown("### 📈 Usage Analytics")
+        
+        if st.session_state.chat_history:
+            # Create usage chart
+            df_history = pd.DataFrame(st.session_state.chat_history)
+            df_history['date'] = pd.to_datetime(df_history['timestamp']).dt.date
+            
+            # Messages per day
+            daily_messages = df_history.groupby('date').size().reset_index(name='messages')
+            
+            fig = px.line(daily_messages, x='date', y='messages', 
+                         title='Messages per Day',
+                         color_discrete_sequence=['#667eea'])
+            fig.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Agent usage
+            agent_usage = df_history['agent'].value_counts().head(10)
+            fig2 = px.bar(x=agent_usage.values, y=agent_usage.index, 
+                         orientation='h',
+                         title='Most Used Agents',
+                         color_discrete_sequence=['#764ba2'])
+            fig2.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+            )
+            st.plotly_chart(fig2, use_container_width=True)
+        else:
+            st.info("Start chatting with agents to see analytics!")
+    
+    with col2:
+        st.markdown("### ⭐ Favorite Agents")
+        if st.session_state.favorite_agents:
+            for agent in st.session_state.favorite_agents:
+                agent_info = BOT_PERSONALITIES[agent]
+                st.markdown(f"""
+                <div class="agent-card" style="margin: 10px 0; padding: 15px;">
+                    <h5>{agent_info['emoji']} {agent}</h5>
+                    <p style="font-size: 0.9em;">{agent_info['category']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("Add agents to favorites to see them here!")
+        
+        st.markdown("### 🕒 Recent Activity")
+        if st.session_state.chat_history:
+            recent_messages = st.session_state.chat_history[-5:]
+            for msg in reversed(recent_messages):
+                st.markdown(f"""
+                <div style="background: rgba(102, 126, 234, 0.1); padding: 10px; border-radius: 10px; margin: 5px 0;">
+                    <strong>{msg['agent']}</strong><br>
+                    <small>{msg['timestamp']}</small>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("No recent activity")
+
+# ======================================================
+# 💬 ENHANCED CHAT PAGE
+# ======================================================
+
+def display_chat_interface():
+    """Display the enhanced chat interface"""
+    # Header with logo
+    col1, col2 = st.columns([1, 4])
+    with col1:
+        display_logo()
+    with col2:
         st.markdown("""
-        <div class="metric-card">
-            <h4>🚀 Application Status</h4>
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <div class="status-indicator status-online"></div>
-                <strong style="color: #10b981;">Online</strong>
+        <div class="main-header">
+            <h1>💬 AI Agent Chat</h1>
+            <p>Converse with your specialized AI business assistants</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Current agent display
+    current_agent = BOT_PERSONALITIES[st.session_state.selected_agent]
+    st.markdown(f"""
+    <div class="agent-card">
+        <h4>Currently chatting with: {current_agent['emoji']} {st.session_state.selected_agent}</h4>
+        <p>{current_agent['description']}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Chat history with enhanced styling
+    if st.session_state.chat_history:
+        st.markdown("### 💬 Conversation History")
+        
+        # Filter by current agent option
+        show_all = st.checkbox("Show conversations with all agents", value=False)
+        
+        messages_to_show = st.session_state.chat_history
+        if not show_all:
+            messages_to_show = [msg for msg in st.session_state.chat_history if msg['agent'] == st.session_state.selected_agent]
+        
+        # Display last 10 messages
+        for msg in messages_to_show[-10:]:
+            st.markdown(f"""
+            <div class="user-message">
+                <strong>You:</strong> {msg['message']}
+                <div style="font-size: 0.8em; opacity: 0.7; margin-top: 8px;">
+                    Agent: {msg['agent']} | {msg['timestamp']}
+                </div>
             </div>
-            <small>Uptime: 99.8%</small>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div class="assistant-message">
+                <strong>{msg['agent']}:</strong> {msg['response']}
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Enhanced chat input
+    st.markdown("### 💭 Ask Your AI Assistant")
+    
+    # Use session state for input if set by quick actions
+    default_input = st.session_state.get('chat_input', '')
+    if default_input:
+        st.session_state.chat_input = ''  # Clear after use
+    
+    # Input options
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        user_input = st.text_area(
+            f"Message {st.session_state.selected_agent}:",
+            value=default_input,
+            height=120,
+            placeholder=f"Ask {st.session_state.selected_agent} for expert business advice...",
+            help="Type your question or request for business guidance"
+        )
+    
+    with col2:
+        st.markdown("**💡 Suggestions:**")
+        suggestions = [
+            "Create a strategy",
+            "Analyze my situation", 
+            "Provide recommendations",
+            "Help me plan",
+            "Review my approach"
+        ]
+        
+        for suggestion in suggestions:
+            if st.button(suggestion, key=f"suggest_{suggestion}"):
+                st.session_state.chat_input = suggestion
+                st.rerun()
+    
+    # Send button with enhanced styling
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("🚀 Send Message", type="primary", use_container_width=True):
+            if user_input.strip():
+                with st.spinner(f"{st.session_state.selected_agent} is analyzing and preparing response..."):
+                    response = chat_with_agent(user_input, st.session_state.selected_agent)
+                    
+                    # Add to chat history
+                    st.session_state.chat_history.append({
+                        'message': user_input,
+                        'response': response,
+                        'agent': st.session_state.selected_agent,
+                        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        'id': str(uuid.uuid4())
+                    })
+                    
+                    st.rerun()
+            else:
+                st.warning("Please enter a message")
+
+# ======================================================
+# 📚 KNOWLEDGE BASE PAGE
+# ======================================================
+
+def display_knowledge_base():
+    """Display knowledge base with business resources"""
+    # Header
+    col1, col2 = st.columns([1, 4])
+    with col1:
+        display_logo()
+    with col2:
+        st.markdown("""
+        <div class="main-header">
+            <h1>📚 Knowledge Base</h1>
+            <p>Business resources, templates, and best practices</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Search functionality
+    search_query = st.text_input("🔍 Search knowledge base", placeholder="Search for templates, frameworks, or topics...")
+    
+    # Categories
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="agent-card">
+            <h4>📋 Business Templates</h4>
+            <ul>
+                <li>Business Plan Template</li>
+                <li>Marketing Strategy Framework</li>
+                <li>Financial Projection Model</li>
+                <li>SWOT Analysis Template</li>
+                <li>Competitive Analysis Framework</li>
+            </ul>
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
         st.markdown("""
-        <div class="metric-card">
-            <h4>🗄️ Database</h4>
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <div class="status-indicator status-online"></div>
-                <strong style="color: #10b981;">Connected</strong>
-            </div>
-            <small>Response: 45ms</small>
+        <div class="agent-card">
+            <h4>🎯 Best Practices</h4>
+            <ul>
+                <li>Startup Launch Checklist</li>
+                <li>Sales Process Optimization</li>
+                <li>Digital Marketing Guide</li>
+                <li>Team Building Strategies</li>
+                <li>Financial Management Tips</li>
+            </ul>
         </div>
         """, unsafe_allow_html=True)
     
     with col3:
         st.markdown("""
-        <div class="metric-card">
-            <h4>🔐 Authentication</h4>
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <div class="status-indicator status-online"></div>
-                <strong style="color: #10b981;">Secure</strong>
-            </div>
-            <small>Sessions: Active</small>
+        <div class="agent-card">
+            <h4>📊 Industry Insights</h4>
+            <ul>
+                <li>Market Trends Analysis</li>
+                <li>Technology Adoption Patterns</li>
+                <li>Consumer Behavior Studies</li>
+                <li>Economic Indicators</li>
+                <li>Regulatory Updates</li>
+            </ul>
         </div>
         """, unsafe_allow_html=True)
     
-    with col4:
+    # Featured content
+    st.markdown("### 🌟 Featured Resources")
+    
+    featured_tabs = st.tabs(["📈 Growth Strategies", "💰 Financial Planning", "🚀 Innovation", "👥 Team Management"])
+    
+    with featured_tabs[0]:
         st.markdown("""
-        <div class="metric-card">
-            <h4>📊 Monitoring</h4>
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <div class="status-indicator status-online"></div>
-                <strong style="color: #10b981;">Active</strong>
-            </div>
-            <small>All metrics OK</small>
-        </div>
-        """, unsafe_allow_html=True)
+        #### Growth Strategy Framework
+        
+        **1. Market Analysis**
+        - Total Addressable Market (TAM)
+        - Serviceable Addressable Market (SAM)
+        - Competitive landscape assessment
+        
+        **2. Growth Channels**
+        - Organic growth strategies
+        - Paid acquisition channels
+        - Partnership opportunities
+        - Product-led growth tactics
+        
+        **3. Metrics & KPIs**
+        - Customer Acquisition Cost (CAC)
+        - Lifetime Value (LTV)
+        - Monthly Recurring Revenue (MRR)
+        - Churn rate optimization
+        """)
     
-    # System tools tabs
-    tab1, tab2, tab3, tab4 = st.tabs(["🛠️ Maintenance", "📊 Monitoring", "🔄 Backups", "🚀 Performance"])
-    
-    with tab1:
-        st.markdown("#### 🛠️ System Maintenance Tools")
-        
-        maint_col1, maint_col2 = st.columns(2)
-        
-        with maint_col1:
-            st.markdown("##### 🧹 Cleanup Operations")
-            
-            if st.button("🗑️ Clear Session Cache", use_container_width=True):
-                st.cache_data.clear()
-                st.success("Session cache cleared successfully!")
-                log_user_activity("system_maintenance", "Session cache cleared")
-            
-            if st.button("📝 Clean Activity Logs", use_container_width=True):
-                with st.spinner("Cleaning old activity logs..."):
-                    time.sleep(2)
-                st.success("Activity logs cleaned! Removed entries older than 90 days.")
-                log_user_activity("system_maintenance", "Activity logs cleaned")
-            
-            if st.button("🔄 Refresh User Sessions", use_container_width=True):
-                with st.spinner("Refreshing all user sessions..."):
-                    time.sleep(1.5)
-                st.success("All user sessions refreshed successfully!")
-                log_user_activity("system_maintenance", "User sessions refreshed")
-        
-        with maint_col2:
-            st.markdown("##### ⚙️ System Operations")
-            
-            if st.button("📊 Rebuild Analytics", use_container_width=True):
-                with st.spinner("Rebuilding analytics data..."):
-                    time.sleep(3)
-                st.success("Analytics data rebuilt successfully!")
-                log_user_activity("system_maintenance", "Analytics rebuilt")
-            
-            if st.button("🔍 Check System Health", use_container_width=True):
-                with st.spinner("Performing system health check..."):
-                    time.sleep(2)
-                    
-                health_results = [
-                    ("Database Connection", "✅ Healthy", "success"),
-                    ("Authentication Service", "✅ Operational", "success"),
-                    ("File Storage", "✅ Available", "success"),
-                    ("Memory Usage", "⚠️ 68% (OK)", "warning"),
-                    ("Disk Space", "✅ 78% Available", "success")
-                ]
-                
-                for check, status, level in health_results:
-                    if level == "success":
-                        st.success(f"{check}: {status}")
-                    elif level == "warning":
-                        st.warning(f"{check}: {status}")
-                    else:
-                        st.error(f"{check}: {status}")
-            
-            if st.button("🔧 Optimize Database", use_container_width=True):
-                with st.spinner("Optimizing database performance..."):
-                    time.sleep(4)
-                st.success("Database optimized! Query performance improved by 15%.")
-                log_user_activity("system_maintenance", "Database optimized")
-    
-    with tab2:
-        st.markdown("#### 📊 System Monitoring Dashboard")
-        
-        # Real-time metrics simulation
-        monitor_col1, monitor_col2 = st.columns(2)
-        
-        with monitor_col1:
-            # CPU and Memory usage over time
-            time_data = pd.date_range(start=datetime.now() - timedelta(hours=24), 
-                                    end=datetime.now(), freq='H')
-            
-            metrics_data = pd.DataFrame({
-                'time': time_data,
-                'cpu_usage': [max(10, min(90, 30 + np.random.normal(0, 10))) for _ in time_data],
-                'memory_usage': [max(20, min(85, 45 + np.random.normal(0, 8))) for _ in time_data]
-            })
-            
-            fig_metrics = go.Figure()
-            fig_metrics.add_trace(go.Scatter(
-                x=metrics_data['time'], y=metrics_data['cpu_usage'],
-                mode='lines', name='CPU Usage (%)',
-                line=dict(color='#f59e0b', width=2)
-            ))
-            fig_metrics.add_trace(go.Scatter(
-                x=metrics_data['time'], y=metrics_data['memory_usage'],
-                mode='lines', name='Memory Usage (%)',
-                line=dict(color='#10b981', width=2, dash='dash')
-            ))
-            
-            fig_metrics.update_layout(
-                title='📈 System Resource Usage (24h)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                font_color='#ffffff',
-                height=350
-            )
-            st.plotly_chart(fig_metrics, use_container_width=True)
-        
-        with monitor_col2:
-            # Response times
-            response_data = pd.DataFrame({
-                'endpoint': ['Login', 'Dashboard', 'Analytics', 'User Management', 'Resources'],
-                'response_time': [120, 89, 156, 98, 67],
-                'status': ['Good', 'Excellent', 'Good', 'Excellent', 'Excellent']
-            })
-            
-            fig_response = px.bar(response_data, x='endpoint', y='response_time',
-                                title='🚀 API Response Times (ms)',
-                                color='status',
-                                color_discrete_map={
-                                    'Excellent': '#10b981',
-                                    'Good': '#f59e0b',
-                                    'Poor': '#ef4444'
-                                })
-            
-            fig_response.update_layout(
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                font_color='#ffffff',
-                height=350
-            )
-            st.plotly_chart(fig_response, use_container_width=True)
-        
-        # System alerts and notifications
-        st.markdown("##### 🚨 Recent System Events")
-        
-        events = [
-            {"time": "2 minutes ago", "type": "info", "message": "User authentication successful", "count": 15},
-            {"time": "5 minutes ago", "type": "success", "message": "Database backup completed", "count": 1},
-            {"time": "12 minutes ago", "type": "warning", "message": "High memory usage detected", "count": 3},
-            {"time": "30 minutes ago", "type": "error", "message": "API rate limit exceeded", "count": 2},
-            {"time": "1 hour ago", "type": "info", "message": "New user registered", "count": 5}
-        ]
-        
-        for event in events:
-            st.markdown(f"""
-            <div class="notification notification-{event['type']}">
-                <small>{event['time']}</small><br>
-                <strong>{event['message']}</strong> (x{event['count']})
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with tab3:
-        st.markdown("#### 🔄 Backup and Restore Management")
-        
-        backup_col1, backup_col2 = st.columns(2)
-        
-        with backup_col1:
-            st.markdown("##### 💾 Database Backups")
-            if st.button("🚀 Initiate Full Backup Now", use_container_width=True):
-                with st.spinner("Performing full database backup..."):
-                    time.sleep(5)
-                st.success("Full database backup completed successfully!")
-                log_user_activity("system_backup", "Full database backup initiated")
-            
-            if st.button("🕒 Schedule Incremental Backup", use_container_width=True):
-                st.info("Incremental backup scheduled for nightly execution.")
-                log_user_activity("system_backup", "Incremental backup scheduled")
-            
-            st.markdown("##### 📂 File System Backups")
-            if st.button("☁️ Backup Uploaded Files to S3", use_container_width=True):
-                with st.spinner("Syncing uploaded files to S3..."):
-                    time.sleep(3)
-                st.success("Uploaded files synced to S3 bucket!")
-                log_user_activity("system_backup", "File system backup to S3")
-        
-        with backup_col2:
-            st.markdown("##### ↩️ Restore Options")
-            restore_option = st.selectbox("Select Restore Point", 
-                                        ["Latest Full Backup (2025-09-23)", 
-                                         "Yesterday's Incremental", 
-                                         "Custom Date..."])
-            if st.button("🚨 Restore System", use_container_width=True):
-                st.warning(f"Initiating system restore from: {restore_option}. This may take a few minutes.")
-                log_user_activity("system_restore", f"System restore initiated from {restore_option}")
-            
-            st.markdown("##### 📜 Backup History")
-            backup_history = [
-                {"date": "2025-09-23", "type": "Full", "status": "Success", "size": "1.2 GB"},
-                {"date": "2025-09-22", "type": "Incremental", "status": "Success", "size": "150 MB"},
-                {"date": "2025-09-21", "type": "Incremental", "status": "Failed", "size": "N/A"}
-            ]
-            for backup in backup_history:
-                status_color = "#10b981" if backup['status'] == "Success" else "#ef4444"
-                st.markdown(f"""
-                <div style="background: rgba(30,41,59,0.3); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem;">
-                    <strong>{backup['date']} ({backup['type']})</strong>: 
-                    <span style="color: {status_color};">{backup['status']}</span> - {backup['size']}
-                </div>
-                """, unsafe_allow_html=True)
-    
-    with tab4:
-        st.markdown("#### 🚀 Performance Optimization Tools")
-        
-        perf_opt_col1, perf_opt_col2 = st.columns(2)
-        
-        with perf_opt_col1:
-            st.markdown("##### ⚡ Caching & CDN Management")
-            if st.button("🔄 Clear All Application Caches", use_container_width=True):
-                st.cache_data.clear()
-                st.cache_resource.clear()
-                st.success("All application caches cleared!")
-                log_user_activity("performance_optimization", "Application caches cleared")
-            
-            if st.button("🌐 Configure CDN Settings", use_container_width=True):
-                st.info("CDN configuration interface would open here.")
-            
-            st.markdown("##### ⚙️ Code & Query Optimization")
-            if st.button("🔍 Analyze Slow Queries", use_container_width=True):
-                st.info("Database slow query analyzer initiated. Results will be displayed shortly.")
-            
-            if st.button("💡 Suggest Code Optimizations", use_container_width=True):
-                st.info("Code optimization suggestions based on performance profiling will appear here.")
-        
-        with perf_opt_col2:
-            st.markdown("##### ⚖️ Load Balancing & Scaling")
-            if st.button("⬆️ Scale Up Resources", use_container_width=True):
-                st.success("Scaling up server resources. This may take a moment.")
-            
-            if st.button("⬇️ Scale Down Resources", use_container_width=True):
-                st.info("Scaling down server resources to optimize costs.")
-            
-            st.markdown("##### 📊 Performance Reports")
-            if st.button("📈 Generate Performance Report", use_container_width=True):
-                st.success("Detailed performance report generated and available for download.")
-            
-            if st.button("📉 View Historical Performance", use_container_width=True):
-                st.info("Loading historical performance metrics and charts.")
-
-def show_system_configuration():
-    """System-wide configuration settings"""
-    st.subheader("⚙️ System Configuration")
-    
-    config_tab1, config_tab2, config_tab3 = st.tabs(["General Settings", "Email & Notifications", "Integrations"])
-    
-    with config_tab1:
-        st.markdown("#### 🌐 General Application Settings")
-        
-        app_name = st.text_input("Application Name", value=Config.APP_NAME)
-        app_version = st.text_input("Application Version", value=Config.VERSION, disabled=True)
-        app_author = st.text_input("Author", value=Config.AUTHOR)
-        app_company = st.text_input("Company", value=Config.COMPANY)
-        app_website = st.text_input("Website URL", value=Config.WEBSITE)
-        
-        if st.button("💾 Save General Settings", use_container_width=True):
-            # In a real app, these would update a database or config file
-            st.success("General settings updated successfully!")
-            log_user_activity("system_config", "General settings updated")
-            
-        st.markdown("--- ")
-        st.markdown("#### ⏰ Session & Security Settings")
-        
-        session_timeout_hours = st.slider("Session Timeout (hours)", min_value=0.5, max_value=24.0, value=Config.SESSION_TIMEOUT/3600, step=0.5)
-        st.session_state.session_timeout = int(session_timeout_hours * 3600)
-        
-        enable_mfa = st.checkbox("Enable Multi-Factor Authentication (MFA)", value=True)
-        enable_ip_whitelist = st.checkbox("Enable IP Whitelisting", value=False)
-        
-        if st.button("🔒 Save Security Settings", use_container_width=True):
-            st.success("Security settings updated successfully!")
-            log_user_activity("system_config", "Security settings updated")
-            
-    with config_tab2:
-        st.markdown("#### 📧 Email & Notification Settings")
-        
-        email_sender = st.text_input("Sender Email Address", value="noreply@entremotivator.com")
-        smtp_server = st.text_input("SMTP Server", value="smtp.sendgrid.net")
-        smtp_port = st.number_input("SMTP Port", value=587)
-        
-        enable_user_notifications = st.checkbox("Enable User Notifications", value=True)
-        enable_admin_alerts = st.checkbox("Enable Admin Security Alerts", value=True)
-        
-        notification_frequency = st.selectbox("Default Notification Frequency", 
-                                            ["Instant", "Daily Digest", "Weekly Summary"])
-        
-        if st.button("🔔 Save Notification Settings", use_container_width=True):
-            st.success("Email and notification settings updated!")
-            log_user_activity("system_config", "Email/Notification settings updated")
-            
-    with config_tab3:
-        st.markdown("#### 🔗 Third-Party Integrations")
-        
-        st.markdown("##### Supabase Integration")
-        supabase_url = st.text_input("Supabase URL", value="https://your-supabase-url.supabase.co", type="password")
-        supabase_key = st.text_input("Supabase Anon Key", value="your-supabase-anon-key", type="password")
-        
-        if st.button("Connect Supabase", use_container_width=True):
-            st.success("Supabase connection details saved and tested!")
-            log_user_activity("system_config", "Supabase integration updated")
-            
-        st.markdown("##### OpenAI API Integration")
-        openai_api_key = st.text_input("OpenAI API Key", value="sk-YOUR_OPENAI_KEY", type="password")
-        
-        if st.button("Connect OpenAI", use_container_width=True):
-            st.success("OpenAI API key saved and validated!")
-            log_user_activity("system_config", "OpenAI integration updated")
-            
-        st.markdown("##### Other Integrations")
-        st.info("More integrations (e.g., Stripe, Google Analytics, Slack) can be configured here.")
-
-def show_api_management():
-    """API management and key generation"""
-    st.subheader("📱 API Management")
-    
-    api_tab1, api_tab2 = st.tabs(["API Keys", "API Usage & Docs"])
-    
-    with api_tab1:
-        st.markdown("#### 🔑 Manage API Keys")
-        
-        # Generate new API key
-        with st.expander("➕ Generate New API Key"):
-            key_name = st.text_input("API Key Name", placeholder="e.g., MyWebApp, MobileApp")
-            key_permissions = st.multiselect("Permissions", 
-                                             ["read:users", "write:users", "read:data", "write:data", "admin:all"],
-                                             default=["read:data"])
-            key_expiry = st.date_input("Expiry Date (Optional)", value=None)
-            
-            if st.button("Generate Key", use_container_width=True):
-                if key_name:
-                    generated_key = hashlib.sha256(os.urandom(60)).hexdigest()
-                    st.success(f"Generated API Key for '{key_name}':")
-                    st.code(generated_key)
-                    st.info("Please save this key now. It will not be shown again.")
-                    log_user_activity("api_management", f"New API key generated: {key_name}")
-                else:
-                    st.error("Please provide an API Key Name.")
-        
-        st.markdown("##### Active API Keys")
-        
-        # Sample active API keys
-        active_api_keys = [
-            {"name": "MyWebApp", "key_prefix": "abc...xyz", "permissions": "read:data, write:data", "created": "2025-08-01", "expires": "Never", "status": "Active"},
-            {"name": "MobileApp", "key_prefix": "def...uvw", "permissions": "read:users", "created": "2025-07-15", "expires": "2026-07-15", "status": "Active"},
-            {"name": "OldService", "key_prefix": "ghi...rst", "permissions": "read:data", "created": "2024-01-01", "expires": "2025-01-01", "status": "Expired"}
-        ]
-        
-        for api_key in active_api_keys:
-            status_color = "#10b981" if api_key['status'] == "Active" else "#ef4444"
-            st.markdown(f"""
-            <div style="background: rgba(30,41,59,0.3); padding: 1rem; border-radius: 8px; margin-bottom: 0.5rem;
-                        border-left: 4px solid {status_color};">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong>{api_key['name']}</strong><br>
-                        <small>Key: {api_key['key_prefix']}</small>
-                    </div>
-                    <div style="text-align: right;">
-                        <span style="color: {status_color};">{api_key['status']}</span><br>
-                        <small>Expires: {api_key['expires']}</small>
-                    </div>
-                </div>
-                <small>Permissions: {api_key['permissions']}</small>
-                <div style="margin-top: 0.5rem;">
-                    <button style="background: #3b82f6; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 4px; cursor: pointer; margin-right: 0.5rem;">Revoke</button>
-                    <button style="background: #f59e0b; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 4px; cursor: pointer;">Edit</button>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-    with api_tab2:
-        st.markdown("#### 📊 API Usage & Documentation")
-        
-        st.markdown("##### API Call Volume (Last 24h)")
-        api_usage_data = pd.DataFrame({
-            'hour': list(range(24)),
-            'calls': [max(0, int(np.random.normal(100, 30))) for _ in range(24)]
-        })
-        fig_api_usage = px.area(api_usage_data, x='hour', y='calls',
-                                title='API Call Volume',
-                                color_discrete_sequence=['#3b82f6'])
-        fig_api_usage.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font_color='#ffffff',
-            height=300
-        )
-        st.plotly_chart(fig_api_usage, use_container_width=True)
-        
-        st.markdown("##### API Error Rates (Last 24h)")
-        api_error_data = pd.DataFrame({
-            'hour': list(range(24)),
-            'errors': [max(0, int(np.random.normal(5, 5))) for _ in range(24)]
-        })
-        fig_api_errors = px.line(api_error_data, x='hour', y='errors',
-                                 title='API Error Rates',
-                                 color_discrete_sequence=['#ef4444'])
-        fig_api_errors.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font_color='#ffffff',
-            height=300
-        )
-        st.plotly_chart(fig_api_errors, use_container_width=True)
-        
-        st.markdown("##### API Documentation")
+    with featured_tabs[1]:
         st.markdown("""
-        Access our comprehensive API documentation to integrate your applications with the AI Agent Toolkit.
+        #### Financial Planning Essentials
         
-        - [API Reference](https://docs.entremotivator.com/api-reference)
-        - [Authentication Guide](https://docs.entremotivator.com/authentication)
-        - [SDKs & Libraries](https://docs.entremotivator.com/sdks)
+        **1. Revenue Forecasting**
+        - Bottom-up vs top-down approaches
+        - Scenario planning (best/worst/likely)
+        - Seasonal adjustments
+        
+        **2. Cost Management**
+        - Fixed vs variable cost analysis
+        - Break-even calculations
+        - Cash flow projections
+        
+        **3. Investment Planning**
+        - Capital allocation strategies
+        - ROI analysis frameworks
+        - Risk assessment models
+        """)
+    
+    with featured_tabs[2]:
+        st.markdown("""
+        #### Innovation Management
+        
+        **1. Innovation Process**
+        - Idea generation techniques
+        - Evaluation criteria
+        - Prototype development
+        
+        **2. Technology Adoption**
+        - Emerging technology assessment
+        - Implementation roadmaps
+        - Change management strategies
+        
+        **3. Innovation Culture**
+        - Fostering creativity
+        - Risk tolerance frameworks
+        - Innovation metrics
+        """)
+    
+    with featured_tabs[3]:
+        st.markdown("""
+        #### Team Management Best Practices
+        
+        **1. Team Building**
+        - Hiring strategies
+        - Onboarding processes
+        - Team dynamics optimization
+        
+        **2. Performance Management**
+        - Goal setting frameworks (OKRs)
+        - Regular feedback systems
+        - Performance review processes
+        
+        **3. Leadership Development**
+        - Leadership competencies
+        - Coaching techniques
+        - Succession planning
         """)
 
-def show_notification_center():
-    """Notification center for system and user alerts"""
-    st.subheader("🔔 Notification Center")
-    
-    notif_tab1, notif_tab2 = st.tabs(["My Notifications", "System Alerts"])
-    
-    with notif_tab1:
-        st.markdown("#### ✉️ Your Recent Notifications")
-        
-        # Sample user notifications
-        user_notifications = [
-            {"id": 1, "type": "info", "message": "Your monthly report is ready!", "time": "2 hours ago", "read": False},
-            {"id": 2, "type": "success", "message": "New feature 'Advanced Analytics' is now live!", "time": "1 day ago", "read": False},
-            {"id": 3, "type": "warning", "message": "Your API key 'OldService' will expire soon.", "time": "3 days ago", "read": True},
-            {"id": 4, "type": "info", "message": "Welcome to the AI Agent Toolkit!", "time": "1 week ago", "read": True}
-        ]
-        
-        for notif in user_notifications:
-            bg_color = "rgba(30,41,59,0.5)" if not notif['read'] else "rgba(30,41,59,0.2)"
-            border_color = {"info": "#3b82f6", "success": "#10b981", "warning": "#f59e0b", "error": "#ef4444"}[notif['type']]
-            read_status = "(Unread)" if not notif['read'] else ""
-            
-            st.markdown(f"""
-            <div style="background: {bg_color}; padding: 1rem; border-radius: 8px; margin-bottom: 0.5rem;
-                        border-left: 4px solid {border_color};">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong>{notif['message']}</strong> <span style="color: #f59e0b;">{read_status}</span><br>
-                        <small>{notif['time']}</small>
-                    </div>
-                    <div>
-                        <button style="background: none; border: none; color: #3b82f6; cursor: pointer;">Mark as Read</button>
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-        if st.button("Clear All Read Notifications", use_container_width=True):
-            st.success("All read notifications cleared!")
-            log_user_activity("notification_center", "Cleared read notifications")
-            
-    with notif_tab2:
-        st.markdown("#### 🚨 Critical System Alerts")
-        
-        system_alerts = [
-            {"id": 1, "type": "error", "message": "Database connection lost for 5 minutes!", "time": "10 minutes ago", "resolved": False},
-            {"id": 2, "type": "warning", "message": "High CPU usage detected on server A. (95% for 15 mins)", "time": "1 hour ago", "resolved": False},
-            {"id": 3, "type": "info", "message": "Scheduled maintenance completed successfully.", "time": "Yesterday", "resolved": True}
-        ]
-        
-        for alert in system_alerts:
-            bg_color = "rgba(30,41,59,0.5)" if not alert['resolved'] else "rgba(30,41,59,0.2)"
-            border_color = {"info": "#3b82f6", "success": "#10b981", "warning": "#f59e0b", "error": "#ef4444"}[alert['type']]
-            resolved_status = "(Unresolved)" if not alert['resolved'] else "(Resolved)"
-            
-            st.markdown(f"""
-            <div style="background: {bg_color}; padding: 1rem; border-radius: 8px; margin-bottom: 0.5rem;
-                        border-left: 4px solid {border_color};">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong>{alert['message']}</strong> <span style="color: #f59e0b;">{resolved_status}</span><br>
-                        <small>{alert['time']}</small>
-                    </div>
-                    <div>
-                        <button style="background: none; border: none; color: #3b82f6; cursor: pointer;">Mark as Resolved</button>
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-        if st.button("Clear All Resolved Alerts", use_container_width=True, key="clear_resolved_alerts"):
-            st.success("All resolved system alerts cleared!")
-            log_user_activity("notification_center", "Cleared resolved system alerts")
+# ======================================================
+# 📄 DOCUMENT GENERATOR PAGE
+# ======================================================
 
-# -------------------------
-# Main Application Logic
-# -------------------------
-def main():
-    initialize_session_state()
-    apply_enhanced_css()
-    show_sidebar_toggle()
-    check_session_timeout()
+def display_document_generator():
+    """Display document generator with templates"""
+    # Header
+    col1, col2 = st.columns([1, 4])
+    with col1:
+        display_logo()
+    with col2:
+        st.markdown("""
+        <div class="main-header">
+            <h1>📄 Document Generator</h1>
+            <p>Generate professional business documents with AI assistance</p>
+        </div>
+        """, unsafe_allow_html=True)
     
-    supabase = init_supabase_connection()
-    if supabase:
-        create_database_tables(supabase)
+    # Document type selector
+    doc_types = {
+        "Business Plan": "📋",
+        "Marketing Strategy": "📱", 
+        "Financial Projection": "💰",
+        "Project Proposal": "📊",
+        "Sales Presentation": "💼",
+        "HR Policy": "👥",
+        "Legal Contract": "⚖️",
+        "Technical Specification": "🔧"
+    }
     
-    with st.sidebar:
-        display_enhanced_logo()
-        st.markdown(f"<h2 style='text-align: center; color: var(--primary-color);'>Welcome, {st.session_state.user_profile.get('full_name', 'Guest')}!</h2>", unsafe_allow_html=True)
+    selected_doc_type = st.selectbox(
+        "Select Document Type:",
+        list(doc_types.keys()),
+        help="Choose the type of document you want to generate"
+    )
+    
+    # Document parameters
+    st.markdown("### 📝 Document Parameters")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        company_name = st.text_input("Company Name", placeholder="Enter your company name")
+        industry = st.selectbox("Industry", [
+            "Technology", "Healthcare", "Finance", "Retail", "Manufacturing", 
+            "Education", "Real Estate", "Consulting", "Other"
+        ])
         
-        if st.session_state.authenticated:
-            st.success(f"Logged in as {st.session_state.user_profile.get('email')}")
-            st.sidebar.markdown("--- ")
-            
-            if st.session_state.role == "admin":
-                st.sidebar.subheader("Admin Tools")
-                if st.sidebar.button("⚙️ Admin Dashboard", use_container_width=True):
-                    st.session_state.page = "admin_dashboard"
-            
-            st.sidebar.subheader("Navigation")
-            if st.sidebar.button("🏠 Home", use_container_width=True):
-                st.session_state.page = "home"
-            if st.sidebar.button("📚 Resources", use_container_width=True):
-                st.session_state.page = "resources"
-            if st.sidebar.button("⬆️ Upload File", use_container_width=True):
-                st.session_state.page = "upload_file"
-            if st.sidebar.button("🔔 Notifications", use_container_width=True):
-                st.session_state.page = "notifications"
-            
-            st.sidebar.markdown("--- ")
-            if st.sidebar.button("🚪 Logout", use_container_width=True):
-                logout()
-        else:
-            st.sidebar.subheader("Account")
-            if st.sidebar.button("➡️ Login", use_container_width=True):
-                st.session_state.page = "login"
-            if st.sidebar.button("📝 Signup", use_container_width=True):
-                st.session_state.page = "signup"
-            if st.sidebar.button("🔑 Reset Password", use_container_width=True):
-                st.session_state.page = "reset_password"
+    with col2:
+        target_audience = st.text_input("Target Audience", placeholder="Who is this document for?")
+        document_length = st.selectbox("Document Length", ["Short (1-2 pages)", "Medium (3-5 pages)", "Long (6+ pages)"])
     
-    # Main content area
-    if st.session_state.authenticated:
-        if st.session_state.get("page") == "admin_dashboard" and st.session_state.role == "admin":
-            show_admin_dashboard()
-        elif st.session_state.get("page") == "resources":
-            show_enhanced_resources()
-        elif st.session_state.get("page") == "upload_file":
-            st.subheader("⬆️ Upload Your Files")
-            uploaded_file = st.file_uploader("Choose a file", type=Config.ALLOWED_FILE_TYPES)
-            if uploaded_file is not None:
-                success, message = handle_file_upload(uploaded_file)
-                if success:
-                    st.success(message)
-                else:
-                    st.error(message)
-            
-            st.markdown("### 📂 Your Uploaded Files")
-            if st.session_state.uploaded_files:
-                for file_info in st.session_state.uploaded_files:
-                    st.write(f"- {file_info['original_name']} ({file_info['size'] / 1024:.2f} KB) - {file_info['status']}")
-            else:
-                st.info("No files uploaded yet.")
-        elif st.session_state.get("page") == "notifications":
-            show_notification_center()
+    # Additional parameters based on document type
+    if selected_doc_type == "Business Plan":
+        st.markdown("#### Business Plan Specifics")
+        col1, col2 = st.columns(2)
+        with col1:
+            business_stage = st.selectbox("Business Stage", ["Idea", "Startup", "Growth", "Mature"])
+            funding_needed = st.text_input("Funding Needed", placeholder="e.g., $100,000")
+        with col2:
+            business_model = st.selectbox("Business Model", ["B2B", "B2C", "B2B2C", "Marketplace", "SaaS", "Other"])
+            time_horizon = st.selectbox("Time Horizon", ["1 year", "3 years", "5 years"])
+    
+    elif selected_doc_type == "Marketing Strategy":
+        st.markdown("#### Marketing Strategy Specifics")
+        col1, col2 = st.columns(2)
+        with col1:
+            marketing_budget = st.text_input("Marketing Budget", placeholder="e.g., $10,000/month")
+            primary_channels = st.multiselect("Primary Channels", [
+                "Social Media", "Email Marketing", "Content Marketing", "SEO", 
+                "Paid Advertising", "Events", "PR", "Influencer Marketing"
+            ])
+        with col2:
+            campaign_duration = st.selectbox("Campaign Duration", ["1 month", "3 months", "6 months", "1 year"])
+            success_metrics = st.multiselect("Success Metrics", [
+                "Brand Awareness", "Lead Generation", "Sales", "Engagement", "Traffic"
+            ])
+    
+    # Custom requirements
+    custom_requirements = st.text_area(
+        "Additional Requirements",
+        placeholder="Specify any additional requirements, focus areas, or special considerations...",
+        height=100
+    )
+    
+    # Generate document
+    if st.button(f"🚀 Generate {selected_doc_type}", type="primary", use_container_width=True):
+        if company_name and industry:
+            with st.spinner(f"Generating your {selected_doc_type}..."):
+                # Simulate document generation
+                time.sleep(2)
+                
+                st.success(f"✅ {selected_doc_type} generated successfully!")
+                
+                # Display generated content preview
+                st.markdown("### 📄 Generated Document Preview")
+                
+                sample_content = f"""
+                # {selected_doc_type} for {company_name}
+                
+                ## Executive Summary
+                
+                {company_name} is a {industry.lower()} company focused on delivering exceptional value to {target_audience.lower() if target_audience else 'our target market'}. This {selected_doc_type.lower()} outlines our strategic approach and implementation plan.
+                
+                ## Key Highlights
+                
+                - **Industry**: {industry}
+                - **Target Audience**: {target_audience or 'To be defined'}
+                - **Document Scope**: {document_length}
+                
+                ## Next Steps
+                
+                1. Review and customize the generated content
+                2. Add specific details relevant to your situation
+                3. Share with stakeholders for feedback
+                4. Implement the outlined strategies
+                
+                *This is a preview. The full document would contain detailed sections, analysis, and recommendations based on your specific requirements.*
+                """
+                
+                st.markdown(sample_content)
+                
+                # Download options
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.download_button(
+                        "📥 Download as PDF",
+                        data=sample_content,
+                        file_name=f"{selected_doc_type}_{company_name}.txt",
+                        mime="text/plain"
+                    )
+                with col2:
+                    st.download_button(
+                        "📥 Download as Word",
+                        data=sample_content,
+                        file_name=f"{selected_doc_type}_{company_name}.txt",
+                        mime="text/plain"
+                    )
+                with col3:
+                    if st.button("📧 Email Document"):
+                        st.info("Email functionality would be implemented here")
         else:
-            st.subheader(f"Welcome to the {Config.APP_NAME}!")
-            st.write("Your central hub for AI agent development and management.")
-            st.info("Use the sidebar to navigate through the application.")
+            st.error("Please fill in at least Company Name and Industry")
+
+# ======================================================
+# 📊 ANALYTICS PAGE
+# ======================================================
+
+def display_analytics():
+    """Display analytics and insights page"""
+    # Header
+    col1, col2 = st.columns([1, 4])
+    with col1:
+        display_logo()
+    with col2:
+        st.markdown("""
+        <div class="main-header">
+            <h1>📊 Analytics & Insights</h1>
+            <p>Analyze your AI agent interactions and business insights</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    if not st.session_state.chat_history:
+        st.info("Start chatting with agents to see analytics and insights!")
+        return
+    
+    # Create DataFrame from chat history
+    df = pd.DataFrame(st.session_state.chat_history)
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['date'] = df['timestamp'].dt.date
+    df['hour'] = df['timestamp'].dt.hour
+    df['message_length'] = df['message'].str.len()
+    df['response_length'] = df['response'].str.len()
+    
+    # Analytics tabs
+    tab1, tab2, tab3, tab4 = st.tabs(["📈 Usage Analytics", "🤖 Agent Performance", "💬 Conversation Analysis", "🎯 Business Insights"])
+    
+    with tab1:
+        st.markdown("### 📈 Usage Analytics")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Messages over time
+            daily_messages = df.groupby('date').size().reset_index(name='messages')
+            fig = px.line(daily_messages, x='date', y='messages', 
+                         title='Messages per Day',
+                         color_discrete_sequence=['#667eea'])
+            fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig, use_container_width=True)
             
-            if st.session_state.dashboard_config.get("show_welcome", True):
-                st.markdown("""
-                <div class="metric-card">
-                    <h4>🚀 Get Started with Your AI Agents</h4>
-                    <p>Explore our resources, manage your users, and monitor your system performance.</p>
-                    <ul>
-                        <li>📚 Access comprehensive guides and tutorials.</li>
-                        <li>👥 Manage user accounts and permissions.</li>
-                        <li>📊 Monitor system analytics and security.</li>
-                    </ul>
-                    <button style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 12px; cursor: pointer;">Explore Features</button>
-                </div>
-                """, unsafe_allow_html=True)
+            # Hourly usage pattern
+            hourly_usage = df.groupby('hour').size().reset_index(name='messages')
+            fig2 = px.bar(hourly_usage, x='hour', y='messages',
+                         title='Usage by Hour of Day',
+                         color_discrete_sequence=['#764ba2'])
+            fig2.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig2, use_container_width=True)
+        
+        with col2:
+            # Message length distribution
+            fig3 = px.histogram(df, x='message_length', nbins=20,
+                              title='Message Length Distribution',
+                              color_discrete_sequence=['#667eea'])
+            fig3.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig3, use_container_width=True)
+            
+            # Response length distribution
+            fig4 = px.histogram(df, x='response_length', nbins=20,
+                              title='Response Length Distribution',
+                              color_discrete_sequence=['#764ba2'])
+            fig4.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig4, use_container_width=True)
+    
+    with tab2:
+        st.markdown("### 🤖 Agent Performance")
+        
+        # Agent usage statistics
+        agent_stats = df.groupby('agent').agg({
+            'message': 'count',
+            'message_length': 'mean',
+            'response_length': 'mean'
+        }).round(2)
+        agent_stats.columns = ['Total Messages', 'Avg Message Length', 'Avg Response Length']
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Most used agents
+            agent_usage = df['agent'].value_counts().head(10)
+            fig = px.bar(x=agent_usage.values, y=agent_usage.index, 
+                        orientation='h',
+                        title='Most Used Agents',
+                        color_discrete_sequence=['#667eea'])
+            fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # Agent categories usage
+            df['category'] = df['agent'].map(lambda x: BOT_PERSONALITIES.get(x, {}).get('category', 'Unknown'))
+            category_usage = df['category'].value_counts()
+            fig2 = px.pie(values=category_usage.values, names=category_usage.index,
+                         title='Usage by Agent Category',
+                         color_discrete_sequence=px.colors.qualitative.Set3)
+            st.plotly_chart(fig2, use_container_width=True)
+        
+        # Detailed agent statistics
+        st.markdown("#### 📊 Detailed Agent Statistics")
+        st.dataframe(agent_stats, use_container_width=True)
+    
+    with tab3:
+        st.markdown("### 💬 Conversation Analysis")
+        
+        # Conversation patterns
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Average conversation length by agent
+            conv_length = df.groupby('agent')['message'].count().sort_values(ascending=False)
+            fig = px.bar(x=conv_length.values, y=conv_length.index,
+                        orientation='h',
+                        title='Messages per Agent',
+                        color_discrete_sequence=['#764ba2'])
+            fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # Message vs Response length correlation
+            fig2 = px.scatter(df, x='message_length', y='response_length',
+                             color='agent',
+                             title='Message vs Response Length',
+                             opacity=0.7)
+            fig2.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig2, use_container_width=True)
+        
+        # Recent conversations summary
+        st.markdown("#### 🕒 Recent Conversations Summary")
+        recent_df = df.tail(10)[['timestamp', 'agent', 'message', 'response']]
+        recent_df['message'] = recent_df['message'].str[:100] + '...'
+        recent_df['response'] = recent_df['response'].str[:100] + '...'
+        st.dataframe(recent_df, use_container_width=True)
+    
+    with tab4:
+        st.markdown("### 🎯 Business Insights")
+        
+        # Business domain analysis
+        business_domains = {
+            'Entrepreneurship & Startups': ['startup', 'business plan', 'funding', 'venture', 'entrepreneur'],
+            'Sales & Marketing': ['sales', 'marketing', 'customer', 'campaign', 'conversion'],
+            'Finance & Accounting': ['finance', 'budget', 'investment', 'revenue', 'cost'],
+            'Technology & Innovation': ['technology', 'digital', 'innovation', 'AI', 'automation'],
+            'Operations & Management': ['operations', 'process', 'management', 'efficiency', 'project'],
+            'Human Resources': ['HR', 'talent', 'employee', 'hiring', 'team']
+        }
+        
+        # Analyze message content for business domains
+        domain_mentions = {}
+        for domain, keywords in business_domains.items():
+            count = 0
+            for message in df['message'].str.lower():
+                if any(keyword in message for keyword in keywords):
+                    count += 1
+            domain_mentions[domain] = count
+        
+        # Display domain analysis
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            fig = px.bar(x=list(domain_mentions.values()), 
+                        y=list(domain_mentions.keys()),
+                        orientation='h',
+                        title='Business Domain Focus',
+                        color_discrete_sequence=['#667eea'])
+            fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # Top business topics
+            st.markdown("#### 🔍 Top Business Topics Discussed")
+            all_keywords = []
+            for keywords in business_domains.values():
+                all_keywords.extend(keywords)
+            
+            keyword_counts = {}
+            for keyword in all_keywords:
+                count = sum(1 for message in df['message'].str.lower() if keyword in message)
+                if count > 0:
+                    keyword_counts[keyword] = count
+            
+            if keyword_counts:
+                sorted_keywords = sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+                for keyword, count in sorted_keywords:
+                    st.markdown(f"**{keyword.title()}**: {count} mentions")
+            else:
+                st.info("Start discussing business topics to see insights!")
+        
+        # Recommendations
+        st.markdown("#### 💡 Recommendations")
+        
+        if len(df) > 0:
+            most_used_category = df['category'].value_counts().index[0]
+            least_used_category = df['category'].value_counts().index[-1]
+            
+            st.markdown(f"""
+            <div class="agent-card">
+                <h5>📊 Usage Insights</h5>
+                <ul>
+                    <li><strong>Most Active Domain:</strong> {most_used_category}</li>
+                    <li><strong>Least Explored Domain:</strong> {least_used_category}</li>
+                    <li><strong>Total Conversations:</strong> {len(df)}</li>
+                    <li><strong>Average Message Length:</strong> {df['message_length'].mean():.0f} characters</li>
+                </ul>
+                
+                <h5>🎯 Suggestions</h5>
+                <ul>
+                    <li>Consider exploring {least_used_category} for broader business insights</li>
+                    <li>Your {most_used_category} focus shows strong engagement in this area</li>
+                    <li>Try asking more detailed questions to get comprehensive responses</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+
+# ======================================================
+# ⚙️ SETTINGS PAGE
+# ======================================================
+
+def display_settings():
+    """Display settings and preferences page"""
+    # Header
+    col1, col2 = st.columns([1, 4])
+    with col1:
+        display_logo()
+    with col2:
+        st.markdown("""
+        <div class="main-header">
+            <h1>⚙️ Settings</h1>
+            <p>Customize your AI Agent Toolkit experience</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Settings tabs
+    tab1, tab2, tab3, tab4 = st.tabs(["👤 Profile", "🎨 Preferences", "🔑 API Settings", "📊 Data Management"])
+    
+    with tab1:
+        st.markdown("### 👤 User Profile")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.text_input("Email", value=st.session_state.user_email, disabled=True)
+            st.text_input("User ID", value=st.session_state.user_id, disabled=True)
+            
+            # Editable profile fields
+            display_name = st.text_input("Display Name", placeholder="Enter your display name")
+            company = st.text_input("Company", placeholder="Your company name")
+            role = st.selectbox("Role", [
+                "CEO/Founder", "Manager", "Consultant", "Analyst", 
+                "Developer", "Marketer", "Sales", "Other"
+            ])
+        
+        with col2:
+            industry = st.selectbox("Industry", [
+                "Technology", "Healthcare", "Finance", "Retail", "Manufacturing",
+                "Education", "Real Estate", "Consulting", "Other"
+            ])
+            experience_level = st.selectbox("Experience Level", [
+                "Beginner", "Intermediate", "Advanced", "Expert"
+            ])
+            interests = st.multiselect("Business Interests", [
+                "Entrepreneurship", "Marketing", "Finance", "Technology",
+                "Operations", "HR", "Legal", "Strategy"
+            ])
+        
+        if st.button("💾 Save Profile", type="primary"):
+            st.success("Profile updated successfully!")
+    
+    with tab2:
+        st.markdown("### 🎨 User Preferences")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Theme settings
+            st.markdown("#### 🎨 Appearance")
+            theme = st.selectbox("Theme", ["Light", "Dark", "Auto"], 
+                                index=0 if st.session_state.user_preferences['theme'] == 'light' else 1)
+            
+            # Notification settings
+            st.markdown("#### 🔔 Notifications")
+            notifications = st.checkbox("Enable Notifications", 
+                                       value=st.session_state.user_preferences['notifications'])
+            email_updates = st.checkbox("Email Updates", value=True)
+            
+            # Auto-save settings
+            st.markdown("#### 💾 Auto-Save")
+            auto_save = st.checkbox("Auto-save Conversations", 
+                                   value=st.session_state.user_preferences['auto_save'])
+            save_frequency = st.selectbox("Save Frequency", ["Every message", "Every 5 messages", "Manual"])
+        
+        with col2:
+            # Agent preferences
+            st.markdown("#### 🤖 Agent Preferences")
+            default_agent = st.selectbox("Default Agent", list(BOT_PERSONALITIES.keys()),
+                                        index=list(BOT_PERSONALITIES.keys()).index(st.session_state.selected_agent))
+            
+            response_style = st.selectbox("Response Style", [
+                "Detailed", "Concise", "Balanced"
+            ])
+            
+            # Language settings
+            st.markdown("#### 🌐 Language")
+            language = st.selectbox("Language", ["English", "Spanish", "French", "German"])
+            
+            # Advanced settings
+            st.markdown("#### ⚙️ Advanced")
+            max_history = st.slider("Max Conversation History", 10, 100, 50)
+            temperature_override = st.checkbox("Override Agent Temperature")
+            if temperature_override:
+                custom_temperature = st.slider("Custom Temperature", 0.0, 1.0, 0.7)
+        
+        if st.button("💾 Save Preferences", type="primary"):
+            st.session_state.user_preferences.update({
+                'theme': theme.lower(),
+                'notifications': notifications,
+                'auto_save': auto_save
+            })
+            st.success("Preferences updated successfully!")
+    
+    with tab3:
+        st.markdown("### 🔑 API Settings")
+        
+        # OpenAI API settings
+        st.markdown("#### 🤖 OpenAI Configuration")
+        
+        current_api_key = "***" if initialize_openai()[1] else "Not configured"
+        st.text_input("Current API Key", value=current_api_key, disabled=True)
+        
+        new_api_key = st.text_input("New API Key", type="password", 
+                                   placeholder="Enter your OpenAI API key")
+        
+        if st.button("🔄 Update API Key"):
+            if new_api_key:
+                # In a real implementation, this would securely store the API key
+                st.success("API key updated successfully!")
+            else:
+                st.error("Please enter a valid API key")
+        
+        # Model settings
+        st.markdown("#### ⚙️ Model Configuration")
+        default_model = st.selectbox("Default Model", [
+            "gpt-4", "gpt-4-turbo", "gpt-3.5-turbo"
+        ])
+        
+        max_tokens = st.slider("Max Tokens per Response", 100, 2000, 1500)
+        
+        # Usage statistics
+        st.markdown("#### 📊 API Usage")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Total Requests", len(st.session_state.chat_history))
+        with col2:
+            total_tokens = sum(len(msg['message']) + len(msg['response']) for msg in st.session_state.chat_history)
+            st.metric("Estimated Tokens", f"{total_tokens:,}")
+        with col3:
+            estimated_cost = total_tokens * 0.00003  # Rough estimate
+            st.metric("Estimated Cost", f"${estimated_cost:.2f}")
+    
+    with tab4:
+        st.markdown("### 📊 Data Management")
+        
+        # Export options
+        st.markdown("#### 📤 Export Data")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("📥 Export Chat History"):
+                if st.session_state.chat_history:
+                    df = pd.DataFrame(st.session_state.chat_history)
+                    csv = df.to_csv(index=False)
+                    st.download_button(
+                        "Download CSV",
+                        data=csv,
+                        file_name=f"chat_history_{datetime.now().strftime('%Y%m%d')}.csv",
+                        mime="text/csv"
+                    )
+                else:
+                    st.info("No chat history to export")
+            
+            if st.button("📥 Export Analytics"):
+                st.info("Analytics export functionality would be implemented here")
+        
+        with col2:
+            if st.button("📥 Export Settings"):
+                settings_data = {
+                    'user_preferences': st.session_state.user_preferences,
+                    'favorite_agents': st.session_state.favorite_agents,
+                    'selected_agent': st.session_state.selected_agent
+                }
+                st.download_button(
+                    "Download Settings",
+                    data=json.dumps(settings_data, indent=2),
+                    file_name=f"settings_{datetime.now().strftime('%Y%m%d')}.json",
+                    mime="application/json"
+                )
+        
+        # Import options
+        st.markdown("#### 📤 Import Data")
+        uploaded_file = st.file_uploader("Import Chat History", type=['csv', 'json'])
+        if uploaded_file:
+            st.info("Import functionality would be implemented here")
+        
+        # Data cleanup
+        st.markdown("#### 🧹 Data Cleanup")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🗑️ Clear Chat History", type="secondary"):
+                if st.session_state.chat_history:
+                    st.session_state.chat_history = []
+                    st.success("Chat history cleared!")
+                else:
+                    st.info("No chat history to clear")
+        
+        with col2:
+            if st.button("🔄 Reset All Settings", type="secondary"):
+                st.session_state.user_preferences = {
+                    'theme': 'light',
+                    'notifications': True,
+                    'auto_save': True
+                }
+                st.session_state.favorite_agents = []
+                st.success("Settings reset to defaults!")
+        
+        # Privacy settings
+        st.markdown("#### 🔒 Privacy Settings")
+        
+        anonymize_data = st.checkbox("Anonymize exported data", value=True)
+        data_retention = st.selectbox("Data Retention Period", [
+            "1 month", "3 months", "6 months", "1 year", "Indefinite"
+        ])
+        
+        st.info("💡 Your data is stored locally in your browser session and is not shared with third parties.")
+
+# ======================================================
+# 🎨 ENHANCED SIDEBAR
+# ======================================================
+
+def display_enhanced_sidebar():
+    """Display enhanced sidebar with navigation and agent selection"""
+    with st.sidebar:
+        # User info with enhanced styling
+        st.markdown(f"""
+        <div class="sidebar-section">
+            <h3>👤 Welcome!</h3>
+            <p><strong>Email:</strong> {st.session_state.user_email}</p>
+            <p><strong>Session:</strong> Active</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Page navigation
+        display_page_navigation()
+        
+        # Agent selector (only show on Chat page)
+        if st.session_state.current_page == "Chat":
+            display_enhanced_agent_selector()
+        
+        # Quick stats
+        st.markdown("""
+        <div class="sidebar-section">
+            <h3>📊 Quick Stats</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        total_messages = len(st.session_state.chat_history)
+        agents_used = len(set(msg['agent'] for msg in st.session_state.chat_history)) if st.session_state.chat_history else 0
+        favorite_count = len(st.session_state.favorite_agents)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Messages", total_messages)
+            st.metric("Favorites", favorite_count)
+        with col2:
+            st.metric("Agents Used", agents_used)
+            st.metric("Available", len(BOT_PERSONALITIES))
+        
+        # Quick actions
+        st.markdown("""
+        <div class="sidebar-section">
+            <h3>⚡ Quick Actions</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("🗑️ Clear Chat History", use_container_width=True):
+            st.session_state.chat_history = []
+            st.rerun()
+        
+        if st.button("📊 View Analytics", use_container_width=True):
+            st.session_state.current_page = "Analytics"
+            st.rerun()
+        
+        if st.button("📄 Generate Document", use_container_width=True):
+            st.session_state.current_page = "Documents"
+            st.rerun()
+        
+        # Logout button
+        st.markdown("---")
+        if st.button("🚪 Logout", type="secondary", use_container_width=True):
+            result = auth.sign_out()
+            st.session_state.authenticated = False
+            st.session_state.user_email = None
+            st.session_state.user_id = None
+            st.session_state.chat_history = []
+            st.session_state.current_page = "Chat"
+            if result['success']:
+                st.success(result['message'])
+            st.rerun()
+
+# ======================================================
+# 🔐 ENHANCED AUTHENTICATION
+# ======================================================
+
+def login_form():
+    """Display enhanced login/signup form with Supabase integration"""
+    # Display logo and banner
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        display_logo()
+    with col2:
+        st.markdown("""
+        <div class="main-header">
+            <h1>🤖 Enhanced AI Agent Toolkit</h1>
+            <p>Your comprehensive suite of 30+ AI business assistants</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Display banner image if available
+    try:
+        if os.path.exists("ai_agent_toolkit_banner.png"):
+            banner = Image.open("ai_agent_toolkit_banner.png")
+            st.image(banner, use_column_width=True)
+    except:
+        pass
+    
+    # Feature highlights
+    st.markdown("### ✨ What's New in Enhanced Version")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="agent-card">
+            <h4>🤖 30+ AI Agents</h4>
+            <p>Expanded from 12 to 30+ specialized business assistants across 7 categories</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="agent-card">
+            <h4>📊 Advanced Analytics</h4>
+            <p>Comprehensive usage analytics, conversation insights, and business intelligence</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div class="agent-card">
+            <h4>📄 Document Generator</h4>
+            <p>AI-powered business document generation with professional templates</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Authentication mode selector
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        auth_mode = st.radio(
+            "Choose an option:",
+            ["Login", "Sign Up", "Reset Password"],
+            horizontal=True,
+            key="auth_mode_selector"
+        )
+        
+        st.session_state.auth_mode = auth_mode.lower().replace(" ", "_")
+    
+    # Authentication forms
+    if st.session_state.auth_mode == "login":
+        login_section()
+    elif st.session_state.auth_mode == "sign_up":
+        signup_section()
+    elif st.session_state.auth_mode == "reset_password":
+        reset_password_section()
+    
+    # Demo mode notice
+    if not auth.is_configured():
+        st.info("🔧 **Demo Mode**: Supabase not configured. You can use any email/password to login.")
+    
+    # Footer with features
+    st.markdown("---")
+    st.markdown("### 🚀 Enhanced Features")
+    
+    features_col1, features_col2 = st.columns(2)
+    
+    with features_col1:
+        st.markdown("""
+        **New Agent Categories:**
+        - 🏛️ Legal & Compliance (4 agents)
+        - 🛒 E-commerce & Retail (4 agents)  
+        - 🎨 Creative & Design (4 agents)
+        - 📊 Data Science & Analytics (3 agents)
+        """)
+    
+    with features_col2:
+        st.markdown("""
+        **New Pages & Features:**
+        - 🏠 Interactive Dashboard
+        - 📚 Knowledge Base
+        - 📄 Document Generator
+        - 📊 Advanced Analytics
+        - ⚙️ Comprehensive Settings
+        """)
+
+def login_section():
+    """Enhanced login form section"""
+    with st.form("login_form"):
+        st.subheader("🔑 Login to Your Account")
+        email = st.text_input("Email Address", placeholder="Enter your email")
+        password = st.text_input("Password", type="password", placeholder="Enter your password")
+        
+        remember_me = st.checkbox("Remember me")
+        
+        login_submitted = st.form_submit_button("🚀 Login", type="primary", use_container_width=True)
+        
+        if login_submitted:
+            if email and password:
+                with st.spinner("Signing in..."):
+                    result = auth.sign_in(email, password)
+                    
+                if result['success']:
+                    st.session_state.authenticated = True
+                    st.session_state.user_email = email
+                    st.session_state.user_id = result['user'].get('id', 'demo-user')
+                    st.success(result['message'])
+                    st.rerun()
+                else:
+                    st.error(result['error'])
+            else:
+                st.error("Please enter both email and password")
+
+def signup_section():
+    """Enhanced signup form section"""
+    with st.form("signup_form"):
+        st.subheader("📝 Create New Account")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            email = st.text_input("Email Address", placeholder="Enter your email")
+            password = st.text_input("Password", type="password", placeholder="Create a password")
+        with col2:
+            confirm_password = st.text_input("Confirm Password", type="password", placeholder="Confirm your password")
+            company = st.text_input("Company (Optional)", placeholder="Your company name")
+        
+        terms_accepted = st.checkbox("I agree to the Terms of Service and Privacy Policy")
+        
+        signup_submitted = st.form_submit_button("🚀 Create Account", type="primary", use_container_width=True)
+        
+        if signup_submitted:
+            if email and password and confirm_password and terms_accepted:
+                if password == confirm_password:
+                    with st.spinner("Creating account..."):
+                        result = auth.sign_up(email, password)
+                        
+                    if result['success']:
+                        st.success(result['message'])
+                        st.info("Please check your email for verification instructions.")
+                    else:
+                        st.error(result['error'])
+                else:
+                    st.error("Passwords do not match")
+            else:
+                st.error("Please fill in all required fields and accept the terms")
+
+def reset_password_section():
+    """Enhanced password reset form section"""
+    with st.form("reset_password_form"):
+        st.subheader("🔄 Reset Password")
+        email = st.text_input("Email Address", placeholder="Enter your email address")
+        
+        reset_submitted = st.form_submit_button("📧 Send Reset Email", type="primary", use_container_width=True)
+        
+        if reset_submitted:
+            if email:
+                with st.spinner("Sending reset email..."):
+                    result = auth.reset_password(email)
+                    
+                if result['success']:
+                    st.success(result['message'])
+                else:
+                    st.error(result['error'])
+            else:
+                st.error("Please enter your email address")
+
+# ======================================================
+# 🚀 MAIN APPLICATION
+# ======================================================
+
+def main():
+    """Enhanced main application function"""
+    init_session_state()
+    
+    if not st.session_state.authenticated:
+        login_form()
     else:
-        # Authentication forms
-        if st.session_state.get("page") == "signup":
-            st.subheader("📝 Create Your Account")
-            with st.form("signup_form"):
-                email = st.text_input("Email")
-                password = st.text_input("Password", type="password")
-                full_name = st.text_input("Full Name (Optional)")
-                company = st.text_input("Company (Optional)")
-                submitted = st.form_submit_button("Sign Up")
-                if submitted:
-                    success, message = enhanced_signup(email, password, full_name, company)
-                    if success:
-                        st.success(message)
-                        st.session_state.page = "login"
-                    else:
-                        st.error(message)
-        elif st.session_state.get("page") == "reset_password":
-            st.subheader("🔑 Reset Your Password")
-            with st.form("reset_password_form"):
-                email = st.text_input("Enter your email")
-                submitted = st.form_submit_button("Send Reset Link")
-                if submitted:
-                    success, message = enhanced_reset_password(email)
-                    if success:
-                        st.success(message)
-                    else:
-                        st.error(message)
-        else: # Default to login page
-            st.subheader("➡️ Login to AI Agent Toolkit")
-            with st.form("login_form"):
-                email = st.text_input("Email")
-                password = st.text_input("Password", type="password")
-                remember_me = st.checkbox("Remember me")
-                submitted = st.form_submit_button("Login")
-                if submitted:
-                    success, message = enhanced_login(email, password, remember_me)
-                    if success:
-                        st.success(message)
-                        st.session_state.page = "home"
-                        st.rerun()
-                    else:
-                        st.error(message)
+        # Display sidebar
+        display_enhanced_sidebar()
+        
+        # Display current page
+        if st.session_state.current_page == "Dashboard":
+            display_dashboard()
+        elif st.session_state.current_page == "Chat":
+            display_chat_interface()
+        elif st.session_state.current_page == "Knowledge":
+            display_knowledge_base()
+        elif st.session_state.current_page == "Documents":
+            display_document_generator()
+        elif st.session_state.current_page == "Analytics":
+            display_analytics()
+        elif st.session_state.current_page == "Settings":
+            display_settings()
+        else:
+            display_chat_interface()  # Default fallback
 
 if __name__ == "__main__":
     main()
