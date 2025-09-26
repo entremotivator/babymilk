@@ -11,25 +11,37 @@ import os
 # Hide Streamlit Elements
 # -------------------------
 def hide_streamlit_style():
-    """Hide Streamlit default elements for cloud deployment"""
+    """Hide Streamlit default elements for cloud deployment - only GitHub link"""
     hide_st_style = """
             <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            .stDeployButton {display:none;}
-            .stDecoration {display:none;}
-            .css-14xtw13.e8zbici0 {display: none;}
-            .css-1rs6os.edgvbvh3 {display: none;}
-            .css-vk3wp9.e1akgbir0 {display: none;}
-            .css-1j8o68f.edgvbvh9 {display: none;}
-            .css-1dp5vir.e8zbici0 {display: none;}
+            /* Hide GitHub link specifically */
+            .stActionButton[data-testid="stActionButton"] {display: none;}
+            .stAppViewContainer > .main .stActionButton {display: none;}
+            div[data-testid="stActionButton"] {display: none;}
+            
+            /* Hide specific GitHub deployment elements */
+            .stDeployButton {display: none !important;}
+            div[data-testid="stDecoration"] {display: none;}
             div[data-testid="stToolbar"] {visibility: hidden;}
-            div[data-testid="stDecoration"] {visibility: hidden;}
-            div[data-testid="stStatusWidget"] {visibility: hidden;}
-            #MainMenu {visibility: hidden;}
-            header {visibility: hidden;}
-            footer {visibility: hidden;}
+            
+            /* Keep other elements visible but hide GitHub link */
+            #MainMenu {visibility: visible;}
+            footer {visibility: visible;}
+            header {visibility: visible;}
+            
+            /* Ensure sidebar is always visible and prominent */
+            section[data-testid="stSidebar"] {
+                display: block !important;
+                visibility: visible !important;
+                width: 350px !important;
+                min-width: 350px !important;
+            }
+            
+            .css-1d391kg, .st-emotion-cache-1d391kg {
+                display: block !important;
+                visibility: visible !important;
+                width: 350px !important;
+            }
             </style>
             """
     st.markdown(hide_st_style, unsafe_allow_html=True)
@@ -38,7 +50,7 @@ def hide_streamlit_style():
 # Professional Styling
 # -------------------------
 def apply_custom_css():
-    """Apply professional AI Agent Toolkit theme"""
+    """Apply professional AI Agent Toolkit theme with enhanced sidebar"""
     hide_streamlit_style()
     
     st.markdown("""
@@ -65,15 +77,26 @@ def apply_custom_css():
         font-family: 'Inter', sans-serif;
     }
     
-    /* Sidebar styling - Multiple selectors for compatibility */
+    /* Enhanced Sidebar styling - Multiple selectors for compatibility */
     .css-1d391kg,
     .st-emotion-cache-1d391kg,
-    section[data-testid="stSidebar"] > div {
-        background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1e293b 0%, #334155 100%) !important;
         color: white !important;
-        border-right: 2px solid #f59e0b;
+        border-right: 3px solid #f59e0b !important;
+        box-shadow: 4px 0 20px rgba(245, 158, 11, 0.3) !important;
+        width: 350px !important;
+        min-width: 350px !important;
+        display: block !important;
+        visibility: visible !important;
     }
     
+    section[data-testid="stSidebar"] > div {
+        background: linear-gradient(180deg, #1e293b 0%, #334155 100%) !important;
+        padding: 2rem 1.5rem !important;
+    }
+    
+    /* Sidebar content styling */
     .css-1d391kg .stMarkdown, 
     .css-1d391kg .stText,
     .css-1d391kg p,
@@ -90,9 +113,64 @@ def apply_custom_css():
     section[data-testid="stSidebar"] span,
     section[data-testid="stSidebar"] div {
         color: white !important;
+        font-family: 'Inter', sans-serif;
     }
     
-    /* Button styling */
+    /* Sidebar headers */
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3 {
+        color: #f59e0b !important;
+        text-align: center;
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+    
+    /* Enhanced sidebar buttons */
+    section[data-testid="stSidebar"] .stButton > button {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+        color: #000000 !important;
+        border: none !important;
+        border-radius: 12px !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 600 !important;
+        font-family: 'Inter', sans-serif !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4) !important;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        width: 100% !important;
+        margin: 0.5rem 0 !important;
+    }
+    
+    section[data-testid="stSidebar"] .stButton > button:hover {
+        background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+        box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6) !important;
+        transform: translateY(-2px) !important;
+    }
+    
+    /* Sidebar selectbox styling */
+    section[data-testid="stSidebar"] .stSelectbox > div > div > select {
+        background: rgba(15, 23, 42, 0.9) !important;
+        color: #ffffff !important;
+        border: 2px solid #f59e0b !important;
+        border-radius: 12px !important;
+        font-weight: 500;
+        padding: 0.75rem !important;
+    }
+    
+    /* Sidebar info boxes */
+    section[data-testid="stSidebar"] .stInfo {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.2) 100%) !important;
+        border: 2px solid #f59e0b !important;
+        border-radius: 12px !important;
+        padding: 1rem !important;
+        margin: 1rem 0 !important;
+        text-align: center;
+        font-weight: 500;
+    }
+    
+    /* Main content button styling */
     .stButton > button {
         background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
         color: #000000;
@@ -315,6 +393,21 @@ def apply_custom_css():
         filter: drop-shadow(0 8px 32px rgba(245, 158, 11, 0.3));
     }
     
+    /* Collaboration features */
+    .collaboration-section {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%);
+        border: 2px solid #f59e0b;
+        border-radius: 16px;
+        padding: 2rem;
+        margin: 2rem 0;
+        text-align: center;
+    }
+    
+    .collaboration-section h3 {
+        color: #f59e0b !important;
+        margin-bottom: 1rem;
+    }
+    
     /* Scrollbar styling */
     ::-webkit-scrollbar {
         width: 12px;
@@ -374,29 +467,30 @@ def display_logo():
         </div>
         """, unsafe_allow_html=True)
 
-def hide_sidebar():
-    """Hide the sidebar for login page"""
+def force_show_sidebar():
+    """Force sidebar to be visible and prominent"""
     st.markdown("""
     <style>
-        section[data-testid="stSidebar"] {display: none !important;}
-        .css-1d391kg {display: none !important;}
-        .css-6qob1r {display: none !important;}
-        .e1fqkh3o3 {display: none !important;}
-        .st-emotion-cache-1d391kg {display: none !important;}
-        .st-emotion-cache-6qob1r {display: none !important;}
-    </style>
-    """, unsafe_allow_html=True)
-
-def show_sidebar():
-    """Show the sidebar for authenticated users"""
-    st.markdown("""
-    <style>
-        section[data-testid="stSidebar"] {display: block !important;}
-        .css-1d391kg {display: block !important;}
-        .css-6qob1r {display: block !important;}
-        .e1fqkh3o3 {display: block !important;}
-        .st-emotion-cache-1d391kg {display: block !important;}
-        .st-emotion-cache-6qob1r {display: block !important;}
+        /* Force sidebar visibility with !important */
+        section[data-testid="stSidebar"] {
+            display: block !important;
+            visibility: visible !important;
+            width: 350px !important;
+            min-width: 350px !important;
+            z-index: 999999 !important;
+        }
+        
+        .css-1d391kg, .st-emotion-cache-1d391kg {
+            display: block !important;
+            visibility: visible !important;
+            width: 350px !important;
+            z-index: 999999 !important;
+        }
+        
+        /* Ensure main content adjusts */
+        .main .block-container {
+            padding-left: 370px !important;
+        }
     </style>
     """, unsafe_allow_html=True)
 
@@ -432,10 +526,10 @@ if "user" not in st.session_state:
 def signup(email, password):
     """Sign up new user (only regular users, no admin option)"""
     if not email or not password:
-        return False, "â ï¸ Please fill in all fields."
+        return False, "⚠️ Please fill in all fields."
     
     if len(password) < 6:
-        return False, "â ï¸ Password must be at least 6 characters long."
+        return False, "⚠️ Password must be at least 6 characters long."
     
     try:
         res = supabase.auth.sign_up({"email": email, "password": password})
@@ -446,13 +540,13 @@ def signup(email, password):
                 "email": email,
                 "role": "user"  # Always user, no admin signup
             }).execute()
-            return True, "â Account created! Please check your email to verify your account, then log in."
-        return False, "â Failed to create account."
+            return True, "✅ Account created! Please check your email to verify your account, then log in."
+        return False, "❌ Failed to create account."
     except Exception as e:
         error_msg = str(e)
         if "already registered" in error_msg.lower():
-            return False, "â ï¸ Email already registered. Try logging in."
-        return False, f"â Signup error: {error_msg}"
+            return False, "⚠️ Email already registered. Try logging in."
+        return False, f"❌ Signup error: {error_msg}"
 
 def login(email, password):
     """Login user"""
@@ -464,18 +558,18 @@ def login(email, password):
             st.session_state.authenticated = True
             st.session_state.user = res.user
             st.session_state.role = role
-            return True, f"â Welcome to the AI Agent Toolkit! Logged in as {role.capitalize()}"
-        return False, "â Invalid email or password."
+            return True, f"✅ Welcome to the AI Agent Toolkit! Logged in as {role.capitalize()}"
+        return False, "❌ Invalid email or password."
     except Exception as e:
-        return False, f"â Login error: {str(e)}"
+        return False, f"❌ Login error: {str(e)}"
 
 def reset_password(email):
     """Reset password"""
     try:
         supabase.auth.reset_password_for_email(email)
-        return True, f"â Password reset email sent to {email}"
+        return True, f"✅ Password reset email sent to {email}"
     except Exception as e:
-        return False, f"â Reset error: {str(e)}"
+        return False, f"❌ Reset error: {str(e)}"
 
 def logout():
     """Logout user"""
@@ -493,18 +587,18 @@ def logout():
 # -------------------------
 def show_resources():
     """Display downloadable resources"""
-    st.subheader("ð AI Agent Toolkit Resources")
+    st.subheader("📚 AI Agent Toolkit Resources")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### ð The Ultimate AI & Bot Checklist")
+        st.markdown("### 📋 The Ultimate AI & Bot Checklist")
         st.write("A comprehensive checklist to guide you through every stage of AI agent development.")
         
         if os.path.exists("/home/ubuntu/ai-agent-toolkit/AI_and_Bot_Checklist.pdf"):
             with open("/home/ubuntu/ai-agent-toolkit/AI_and_Bot_Checklist.pdf", "rb") as file:
                 st.download_button(
-                    label="ð¥ Download Checklist PDF",
+                    label="📥 Download Checklist PDF",
                     data=file.read(),
                     file_name="AI_and_Bot_Checklist.pdf",
                     mime="application/pdf",
@@ -512,13 +606,13 @@ def show_resources():
                 )
     
     with col2:
-        st.markdown("### ð ï¸ 250 Best AI Tools")
+        st.markdown("### 🛠️ 250 Best AI Tools")
         st.write("A curated list of the most innovative and effective AI tools available today.")
         
         if os.path.exists("/home/ubuntu/ai-agent-toolkit/250_Best_AI_Tools.pdf"):
             with open("/home/ubuntu/ai-agent-toolkit/250_Best_AI_Tools.pdf", "rb") as file:
                 st.download_button(
-                    label="ð¥ Download AI Tools PDF",
+                    label="📥 Download AI Tools PDF",
                     data=file.read(),
                     file_name="250_Best_AI_Tools.pdf",
                     mime="application/pdf",
@@ -526,55 +620,99 @@ def show_resources():
                 )
     
     st.markdown("---")
-    st.markdown("### ð Additional Resources")
+    st.markdown("### 🌐 Additional Resources")
     st.markdown("""
     <div style="text-align: center; margin: 2rem 0;">
         <a href="https://entremotivator.com" target="_blank" class="resource-link">
-            ð Visit Entremotivator.com for More Resources
+            🚀 Visit Entremotivator.com for More Resources
         </a>
     </div>
     """, unsafe_allow_html=True)
+
+    # Add collaboration section
+    show_collaboration_section()
+
+def show_collaboration_section():
+    """Show collaboration features"""
+    st.markdown("""
+    <div class="collaboration-section">
+        <h3>🤝 Collaborate with the Community</h3>
+        <p>Join our growing community of AI enthusiasts and professionals!</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("💬 Join Discussion Forum", use_container_width=True):
+            st.success("Redirecting to community forum...")
+    with col2:
+        if st.button("📖 Share Your Experience", use_container_width=True):
+            st.success("Opening experience sharing form...")
+    with col3:
+        if st.button("🎯 Request Feature", use_container_width=True):
+            st.success("Opening feature request form...")
 
 # -------------------------
 # Admin Dashboard
 # -------------------------
 def admin_dashboard():
     """Admin dashboard with full management features"""
-    show_sidebar()
+    force_show_sidebar()
     
     display_logo()
-    st.title("ð AI Agent Toolkit - Admin Dashboard")
+    st.title("🎛️ AI Agent Toolkit - Admin Dashboard")
     
     with st.sidebar:
-        st.markdown("### ð§ Admin Tools")
+        st.markdown("### 🎛️ Admin Command Center")
+        st.markdown("---")
         
         if st.session_state.user:
-            st.info(f"ð¤ {st.session_state.user.email}\\nð­ {st.session_state.role.title()}")
+            st.markdown(f"""
+            <div style="text-align: center; padding: 1rem; background: rgba(245, 158, 11, 0.1); border-radius: 12px; margin: 1rem 0;">
+                <h4>👑 Administrator</h4>
+                <p><strong>Email:</strong> {st.session_state.user.email}</p>
+                <p><strong>Role:</strong> {st.session_state.role.title()}</p>
+            </div>
+            """, unsafe_allow_html=True)
         
-        if st.button("ðª Logout", type="secondary", use_container_width=True):
+        st.markdown("### 🚀 Quick Actions")
+        if st.button("🔄 Refresh Data", use_container_width=True):
+            st.success("Data refreshed!")
+        
+        if st.button("📊 Export Reports", use_container_width=True):
+            st.success("Reports exported!")
+        
+        if st.button("🚪 Logout", type="secondary", use_container_width=True):
             logout()
         
-        st.divider()
+        st.markdown("---")
         
         admin_section = st.selectbox(
-            "Select Section",
-            ["ð Analytics", "ð¥ User Management", "ð Resources", "ð Reports", "âï¸ Settings"]
+            "📋 Select Admin Section",
+            ["📊 Analytics", "👥 User Management", "📚 Resources", "📋 Reports", "⚙️ Settings"],
+            help="Choose the admin section you want to manage"
         )
+        
+        st.markdown("---")
+        st.markdown("### 🎯 System Status")
+        st.success("🟢 All Systems Operational")
+        st.info("👥 Active Users: 156")
+        st.warning("⚡ Server Load: Medium")
     
-    if admin_section == "ð Analytics":
+    if admin_section == "📊 Analytics":
         show_admin_analytics()
-    elif admin_section == "ð¥ User Management":
+    elif admin_section == "👥 User Management":
         show_user_management()
-    elif admin_section == "ð Resources":
+    elif admin_section == "📚 Resources":
         show_resources()
-    elif admin_section == "ð Reports":
+    elif admin_section == "📋 Reports":
         show_system_reports()
-    elif admin_section == "âï¸ Settings":
+    elif admin_section == "⚙️ Settings":
         show_admin_settings()
 
 def show_admin_analytics():
     """Show admin analytics"""
-    st.subheader("ð AI Agent Toolkit Analytics")
+    st.subheader("📊 AI Agent Toolkit Analytics")
     
     try:
         users = supabase.table("user_profiles").select("*").execute()
@@ -596,7 +734,7 @@ def show_admin_analytics():
             st.metric("Confirmed Users", confirmed_users)
         
         if users.data:
-            st.subheader("ð User Registration Trends")
+            st.subheader("📈 User Registration Trends")
             dates = pd.date_range(start='2024-01-01', end=datetime.now(), freq='D')
             registrations = pd.DataFrame({
                 'date': dates,
@@ -632,7 +770,7 @@ def show_admin_analytics():
 
 def show_user_management():
     """Show user management interface"""
-    st.subheader("ð¥ User Management")
+    st.subheader("👥 User Management")
     
     try:
         users = supabase.table("user_profiles").select("*").execute()
@@ -652,7 +790,7 @@ def show_user_management():
 
         col1, col2 = st.columns([2, 1])
         with col1:
-            search = st.text_input("ð Search by email")
+            search = st.text_input("🔍 Search by email")
         with col2:
             role_filter = st.selectbox("Filter by role", ["All", "user", "admin"])
         
@@ -662,19 +800,19 @@ def show_user_management():
         if role_filter != "All":
             filtered = [u for u in filtered if u["role"] == role_filter]
 
-        st.subheader("ð§ Bulk Actions")
+        st.subheader("🎯 Bulk Actions")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("ð§ Send Welcome Email to All"):
+            if st.button("📧 Send Welcome Email to All"):
                 st.success("Welcome emails sent to all users!")
         with col2:
-            if st.button("â¬ï¸ Export User Data"):
+            if st.button("⬇️ Export User Data"):
                 df = pd.DataFrame(filtered)
                 st.download_button("Download CSV", df.to_csv(index=False), "users.csv", "text/csv")
 
         if filtered:
             for i, user in enumerate(filtered):
-                with st.expander(f"ð¤ {user['email']} ({user['role'].title()}) {'â' if user['confirmed'] else 'â'}"):
+                with st.expander(f"👤 {user['email']} ({user['role'].title()}) {'✅' if user['confirmed'] else '❌'}"):
                     col1, col2 = st.columns(2)
                     with col1:
                         st.write(f"**User ID:** {user['id'][:8]}...")
@@ -695,7 +833,7 @@ def show_user_management():
                             st.rerun()
                     
                     with action_col2:
-                        if st.button("ð Reset Password", key=f"reset_{i}"):
+                        if st.button("🔐 Reset Password", key=f"reset_{i}"):
                             success, msg = reset_password(user["email"])
                             if success:
                                 st.success(msg)
@@ -703,7 +841,7 @@ def show_user_management():
                                 st.error(msg)
                     
                     with action_col3:
-                        if st.button("â Delete User", key=f"delete_{i}", type="secondary"):
+                        if st.button("❌ Delete User", key=f"delete_{i}", type="secondary"):
                             try:
                                 supabase.table("user_profiles").delete().eq("id", user["id"]).execute()
                                 supabase.auth.admin.delete_user(user["id"])
@@ -719,7 +857,7 @@ def show_user_management():
 
 def show_system_reports():
     """Show system reports"""
-    st.subheader("ð System Reports")
+    st.subheader("📋 System Reports")
     
     st.write("**Recent System Activity**")
     activity_data = [
@@ -730,20 +868,20 @@ def show_system_reports():
     ]
     
     for activity in activity_data:
-        st.write(f"ð {activity['timestamp'].strftime('%Y-%m-%d %H:%M')} - {activity['action']} - {activity['user']}")
+        st.write(f"🕐 {activity['timestamp'].strftime('%Y-%m-%d %H:%M')} - {activity['action']} - {activity['user']}")
     
-    st.subheader("ð¥ System Health")
+    st.subheader("🏥 System Health")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Database Status", "â Healthy", delta="99.9% uptime")
+        st.metric("Database Status", "✅ Healthy", delta="99.9% uptime")
     with col2:
-        st.metric("Auth Service", "â Operational", delta="0 errors")
+        st.metric("Auth Service", "✅ Operational", delta="0 errors")
     with col3:
-        st.metric("API Response", "â¡ Fast", delta="120ms avg")
+        st.metric("API Response", "⚡ Fast", delta="120ms avg")
 
 def show_admin_settings():
     """Show admin settings"""
-    st.subheader("âï¸ System Settings")
+    st.subheader("⚙️ System Settings")
     
     st.write("**Security Configuration**")
     password_policy = st.checkbox("Enforce minimum password length", value=True)
@@ -755,66 +893,100 @@ def show_admin_settings():
     notification_email = st.text_input("Admin notification email", value="admin@company.com")
     
     st.write("**System Maintenance**")
-    if st.button("ð§¹ Clean up old sessions"):
+    if st.button("🧹 Clean up old sessions"):
         st.success("Old sessions cleaned up!")
-    if st.button("ð Generate system report"):
+    if st.button("📊 Generate system report"):
         st.success("System report generated!")
     
-    if st.button("ð¾ Save Settings", type="primary"):
+    if st.button("💾 Save Settings", type="primary"):
         st.success("Settings saved successfully!")
 
 # -------------------------
 # User Dashboard
 # -------------------------
 def user_dashboard():
-    """Regular user dashboard"""
-    show_sidebar()
+    """Regular user dashboard with enhanced sidebar"""
+    force_show_sidebar()
     
     display_logo()
-    st.title("ð¤ Welcome to the AI Agent Toolkit")
+    st.title("🤖 Welcome to the AI Agent Toolkit")
     
     user_email = st.session_state.user.email if st.session_state.user else "Unknown"
     user_id = st.session_state.user.id if st.session_state.user else None
     
     with st.sidebar:
-        st.markdown("### ð  Dashboard")
+        st.markdown("### 🏠 User Dashboard")
+        st.markdown("---")
         
-        st.info(f"ð¤ {user_email.split('@')[0].title()}\\nð­ {st.session_state.role.title()}\\nð§ {user_email}")
+        # Enhanced user info section
+        st.markdown(f"""
+        <div style="text-align: center; padding: 1.5rem; background: rgba(245, 158, 11, 0.1); border-radius: 12px; margin: 1rem 0;">
+            <h4>👋 Welcome Back!</h4>
+            <p><strong>Name:</strong> {user_email.split('@')[0].title()}</p>
+            <p><strong>Role:</strong> {st.session_state.role.title()}</p>
+            <p><strong>Email:</strong> {user_email}</p>
+        </div>
+        """, unsafe_allow_html=True)
         
-        if st.button("ðª Logout", type="secondary", use_container_width=True):
+        st.markdown("### 🚀 Quick Actions")
+        if st.button("📚 View Resources", use_container_width=True):
+            st.success("Loading resources...")
+        
+        if st.button("📊 My Progress", use_container_width=True):
+            st.success("Loading progress...")
+        
+        if st.button("🚪 Logout", type="secondary", use_container_width=True):
             logout()
         
-        st.divider()
+        st.markdown("---")
         
         page = st.selectbox(
-            "Navigate to:",
-            ["ð My Activity", "ð Resources", "ð¤ Profile", "ð Notifications", "â Help"]
+            "🧭 Navigate to:",
+            ["📊 My Activity", "📚 Resources", "👤 Profile", "🔔 Notifications", "❓ Help", "🤝 Community"],
+            help="Select the section you want to explore"
         )
+        
+        st.markdown("---")
+        st.markdown("### 🎯 Your Stats")
+        st.info("📅 Member since: Jan 2024")
+        st.success("🏆 Downloads: 5")
+        st.warning("⭐ Community Level: Bronze")
+        
+        # Collaboration section in sidebar
+        st.markdown("### 🤝 Community Hub")
+        if st.button("💬 Chat Room", use_container_width=True):
+            st.success("Joining chat room...")
+        if st.button("🎯 Challenges", use_container_width=True):
+            st.success("Loading challenges...")
     
-    if page == "ð My Activity":
+    if page == "📊 My Activity":
         show_user_activity(user_id, user_email)
-    elif page == "ð Resources":
+    elif page == "📚 Resources":
         show_resources()
-    elif page == "ð¤ Profile":
+    elif page == "👤 Profile":
         show_user_profile(user_id, user_email)
-    elif page == "ð Notifications":
+    elif page == "🔔 Notifications":
         show_user_notifications(user_email)
-    elif page == "â Help":
+    elif page == "❓ Help":
         show_user_help()
+    elif page == "🤝 Community":
+        show_community_features()
 
 def show_user_activity(user_id, user_email):
     """Show user activity"""
-    st.subheader("ð Your Activity Overview")
+    st.subheader("📊 Your Activity Overview")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Days Active", "12", delta="+2")
     with col2:
         st.metric("Total Sessions", "45", delta="+5")
     with col3:
+        st.metric("Resources Downloaded", "8", delta="+3")
+    with col4:
         st.metric("Last Login", "2 hours ago")
     
-    st.subheader("ð Your Activity Chart")
+    st.subheader("📈 Your Activity Chart")
     dates = pd.date_range(start=datetime.now() - timedelta(days=30), end=datetime.now(), freq='D')
     activity = pd.DataFrame({
         'date': dates,
@@ -830,10 +1002,20 @@ def show_user_activity(user_id, user_email):
         font_color='#ffffff'
     )
     st.plotly_chart(fig, use_container_width=True)
+    
+    # Progress tracking
+    st.subheader("🏆 Achievement Progress")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.progress(0.7, text="AI Toolkit Explorer: 70%")
+        st.progress(0.4, text="Resource Collector: 40%")
+    with col2:
+        st.progress(0.9, text="Daily User: 90%")
+        st.progress(0.2, text="Community Contributor: 20%")
 
 def show_user_profile(user_id, user_email):
     """Show user profile"""
-    st.subheader("ð¤ Your Profile")
+    st.subheader("👤 Your Profile")
     
     with st.form("profile_form"):
         st.write("**Personal Information**")
@@ -851,7 +1033,7 @@ def show_user_profile(user_id, user_email):
         new_password = st.text_input("New Password", type="password")
         confirm_password = st.text_input("Confirm New Password", type="password")
         
-        if st.form_submit_button("ð¾ Save Changes", type="primary"):
+        if st.form_submit_button("💾 Save Changes", type="primary"):
             if new_password and new_password == confirm_password:
                 if len(new_password) >= 6:
                     st.success("Profile updated successfully!")
@@ -862,33 +1044,35 @@ def show_user_profile(user_id, user_email):
 
 def show_user_notifications(user_email):
     """Show user notifications"""
-    st.subheader("ð Your Notifications")
+    st.subheader("🔔 Your Notifications")
     
     st.write("**Notification Preferences**")
     email_notifications = st.checkbox("Email notifications", value=True)
     security_alerts = st.checkbox("Security alerts", value=True)
     product_updates = st.checkbox("Product updates", value=False)
+    community_updates = st.checkbox("Community updates", value=True)
     
     st.write("**Recent Notifications**")
     notifications = [
         {"time": "1 hour ago", "message": "Welcome to the AI Agent Toolkit!", "type": "info", "read": False},
         {"time": "1 day ago", "message": "Your profile was updated", "type": "success", "read": True},
         {"time": "3 days ago", "message": "Security: New login detected", "type": "warning", "read": True},
+        {"time": "1 week ago", "message": "New community challenge available!", "type": "info", "read": False},
     ]
     
     for i, notif in enumerate(notifications):
-        icon = "ðµ" if not notif["read"] else "âª"
-        type_icon = {"info": "â¹ï¸", "success": "â", "warning": "â ï¸"}.get(notif["type"], "ð¢")
+        icon = "🔵" if not notif["read"] else "⚪"
+        type_icon = {"info": "ℹ️", "success": "✅", "warning": "⚠️"}.get(notif["type"], "📢")
         st.write(f"{icon} {type_icon} **{notif['message']}** - {notif['time']}")
         if not notif["read"] and st.button(f"Mark as read", key=f"read_{i}"):
             st.success("Marked as read!")
     
-    if st.button("ð§¹ Clear all notifications"):
+    if st.button("🧹 Clear all notifications"):
         st.success("All notifications cleared!")
 
 def show_user_help():
     """Show user help"""
-    st.subheader("â Help & Support")
+    st.subheader("❓ Help & Support")
     
     st.write("**Frequently Asked Questions**")
     
@@ -901,45 +1085,144 @@ def show_user_help():
     with st.expander("How do I update my notification preferences?"):
         st.write("Visit the Notifications tab to customize which notifications you receive.")
     
+    with st.expander("How can I collaborate with other users?"):
+        st.write("Visit the Community tab to join discussions, participate in challenges, and share your experiences.")
+    
     with st.expander("Who can I contact for support?"):
         st.write("You can reach out to our support team at support@entremotivator.com")
     
     st.write("**Contact Support**")
     with st.form("support_form"):
-        subject = st.selectbox("Subject", ["General Question", "Technical Issue", "Feature Request", "Bug Report"])
+        subject = st.selectbox("Subject", ["General Question", "Technical Issue", "Feature Request", "Bug Report", "Community Help"])
         message = st.text_area("Message", placeholder="Describe your question or issue...")
         
-        if st.form_submit_button("ð§ Send Message"):
+        if st.form_submit_button("📧 Send Message"):
             st.success("Your message has been sent! We'll get back to you soon.")
+
+def show_community_features():
+    """Show community collaboration features"""
+    st.subheader("🤝 Community & Collaboration")
+    
+    st.markdown("""
+    <div class="collaboration-section">
+        <h3>🌟 Connect with Fellow AI Enthusiasts</h3>
+        <p>Join our vibrant community of AI practitioners, developers, and enthusiasts!</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    tab1, tab2, tab3, tab4 = st.tabs(["💬 Discussions", "🏆 Challenges", "📝 Share Experience", "🤖 AI Showcase"])
+    
+    with tab1:
+        st.subheader("💬 Community Discussions")
+        st.write("**Popular Topics**")
+        topics = [
+            {"title": "Best AI Tools for 2024", "replies": 45, "last_active": "2 hours ago"},
+            {"title": "Automation Success Stories", "replies": 32, "last_active": "4 hours ago"},
+            {"title": "Claude vs GPT-4 Comparison", "replies": 67, "last_active": "1 day ago"},
+            {"title": "Getting Started with AI Agents", "replies": 28, "last_active": "2 days ago"},
+        ]
+        
+        for topic in topics:
+            with st.expander(f"🗨️ {topic['title']} ({topic['replies']} replies)"):
+                st.write(f"**Last Activity:** {topic['last_active']}")
+                st.write("Join the discussion and share your thoughts!")
+                if st.button(f"Join Discussion", key=f"join_{topic['title']}"):
+                    st.success("Joining discussion thread...")
+        
+        if st.button("➕ Start New Discussion", type="primary"):
+            st.success("Opening new discussion form...")
+    
+    with tab2:
+        st.subheader("🏆 Community Challenges")
+        st.write("**Current Challenges**")
+        challenges = [
+            {"name": "30-Day AI Automation Challenge", "participants": 156, "days_left": 12},
+            {"name": "Build Your First AI Agent", "participants": 89, "days_left": 25},
+            {"name": "AI Tool Discovery Marathon", "participants": 203, "days_left": 5},
+        ]
+        
+        for challenge in challenges:
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.write(f"**{challenge['name']}**")
+                st.write(f"👥 {challenge['participants']} participants | ⏰ {challenge['days_left']} days left")
+            with col2:
+                if st.button("Join", key=f"join_{challenge['name']}"):
+                    st.success(f"Joined {challenge['name']}!")
+    
+    with tab3:
+        st.subheader("📝 Share Your Experience")
+        with st.form("experience_form"):
+            experience_type = st.selectbox("Experience Type", 
+                ["Success Story", "Lesson Learned", "Tool Review", "Tutorial", "Case Study"])
+            title = st.text_input("Title")
+            content = st.text_area("Share your experience...", height=200)
+            tags = st.text_input("Tags (comma-separated)", placeholder="ai, automation, productivity")
+            
+            if st.form_submit_button("📤 Share Experience"):
+                st.success("Thank you for sharing! Your experience will help others in the community.")
+                st.balloons()
+    
+    with tab4:
+        st.subheader("🤖 AI Showcase")
+        st.write("**Featured AI Projects from Community**")
+        projects = [
+            {"title": "Customer Service Bot", "author": "John D.", "likes": 45, "description": "Automated customer support using Claude"},
+            {"title": "Content Generation Pipeline", "author": "Sarah M.", "likes": 67, "description": "AI-powered content creation workflow"},
+            {"title": "Data Analysis Assistant", "author": "Mike R.", "likes": 34, "description": "Intelligent data insights generator"},
+        ]
+        
+        for project in projects:
+            with st.expander(f"🚀 {project['title']} by {project['author']} (👍 {project['likes']})"):
+                st.write(project['description'])
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    if st.button("👍 Like", key=f"like_{project['title']}"):
+                        st.success("Liked!")
+                with col2:
+                    if st.button("💬 Comment", key=f"comment_{project['title']}"):
+                        st.success("Opening comments...")
+                with col3:
+                    if st.button("🔗 Learn More", key=f"learn_{project['title']}"):
+                        st.success("Loading project details...")
 
 # -------------------------
 # Login Page
 # -------------------------
 def login_page():
-    """Professional login page"""
-    hide_sidebar()
+    """Professional login page without sidebar"""
+    st.markdown("""
+    <style>
+        section[data-testid="stSidebar"] {display: none !important;}
+        .css-1d391kg {display: none !important;}
+        .css-6qob1r {display: none !important;}
+        .e1fqkh3o3 {display: none !important;}
+        .st-emotion-cache-1d391kg {display: none !important;}
+        .st-emotion-cache-6qob1r {display: none !important;}
+    </style>
+    """, unsafe_allow_html=True)
     
     display_logo()
     
     st.markdown("""
     <div class="welcome-header">
-        <h1>ð AI Agent Toolkit Authentication Portal</h1>
+        <h1>🎯 AI Agent Toolkit Authentication Portal</h1>
         <p>Secure access to your personalized AI toolkit dashboard</p>
     </div>
     """, unsafe_allow_html=True)
 
-    tab1, tab2, tab3 = st.tabs(["ð Login", "ð Sign Up", "ð Reset Password"])
+    tab1, tab2, tab3 = st.tabs(["🔑 Login", "📝 Sign Up", "🔐 Reset Password"])
 
     with tab1:
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        st.subheader("ð Sign In to Your Account")
+        st.subheader("🔑 Sign In to Your Account")
         with st.form("login_form"):
-            email = st.text_input("ð§ Email Address", placeholder="your.email@example.com")
-            password = st.text_input("ð Password", type="password", placeholder="Enter your password")
+            email = st.text_input("📧 Email Address", placeholder="your.email@example.com")
+            password = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
             
-            remember_me = st.checkbox("ð§  Remember me")
+            remember_me = st.checkbox("🧠 Remember me")
             
-            if st.form_submit_button("ð Login", type="primary", use_container_width=True):
+            if st.form_submit_button("🔑 Login", type="primary", use_container_width=True):
                 if email and password:
                     success, msg = login(email, password)
                     if success:
@@ -954,23 +1237,23 @@ def login_page():
 
     with tab2:
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        st.subheader("ð Create New Account")
-        st.info("ð¡ New accounts are created as regular users. Contact an administrator to upgrade to admin privileges.")
+        st.subheader("📝 Create New Account")
+        st.info("💡 New accounts are created as regular users. Contact an administrator to upgrade to admin privileges.")
         
         with st.form("signup_form"):
-            email = st.text_input("ð§ Email Address", placeholder="your.email@example.com")
-            password = st.text_input("ð Password", type="password", 
+            email = st.text_input("📧 Email Address", placeholder="your.email@example.com")
+            password = st.text_input("🔒 Password", type="password", 
                                    help="Must be at least 6 characters long")
-            confirm_password = st.text_input("ð Confirm Password", type="password")
+            confirm_password = st.text_input("🔒 Confirm Password", type="password")
             
-            terms = st.checkbox("â I agree to the Terms of Service and Privacy Policy")
+            terms = st.checkbox("✅ I agree to the Terms of Service and Privacy Policy")
             
-            if st.form_submit_button("ð Create Account", type="primary", use_container_width=True):
+            if st.form_submit_button("📝 Create Account", type="primary", use_container_width=True):
                 if email and password and confirm_password:
                     if password != confirm_password:
-                        st.error("â Passwords don't match!")
+                        st.error("❌ Passwords don't match!")
                     elif not terms:
-                        st.warning("â ï¸ Please agree to the terms and conditions.")
+                        st.warning("⚠️ Please agree to the terms and conditions.")
                     else:
                         success, msg = signup(email, password)
                         if success:
@@ -984,13 +1267,13 @@ def login_page():
 
     with tab3:
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        st.subheader("ð Reset Your Password")
+        st.subheader("🔐 Reset Your Password")
         with st.form("reset_form"):
-            email = st.text_input("ð§ Email Address", 
+            email = st.text_input("📧 Email Address", 
                                  placeholder="Enter your registered email address")
-            st.info("ð¡ We'll send you a secure link to reset your password")
+            st.info("💡 We'll send you a secure link to reset your password")
             
-            if st.form_submit_button("ð§ Send Reset Link", type="primary", use_container_width=True):
+            if st.form_submit_button("📧 Send Reset Link", type="primary", use_container_width=True):
                 if email:
                     success, msg = reset_password(email)
                     if success:
@@ -1008,9 +1291,9 @@ def main():
     """Main application"""
     st.set_page_config(
         page_title="AI Agent Toolkit by D Hudson", 
-        page_icon="ð¤", 
+        page_icon="🤖", 
         layout="wide",
-        initial_sidebar_state="auto"
+        initial_sidebar_state="expanded"
     )
     
     apply_custom_css()
