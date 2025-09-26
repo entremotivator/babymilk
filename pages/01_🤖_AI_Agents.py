@@ -56,6 +56,88 @@ def apply_ai_toolkit_theme():
         font-family: 'Inter', sans-serif;
     }
     
+    /* Sidebar styling */
+    .css-1d391kg, [data-testid="stSidebar"] {
+        display: block !important;
+        visibility: visible !important;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+        border-right: 2px solid #475569 !important;
+        padding: 1rem !important;
+    }
+    
+    /* Sidebar content styling */
+    .css-1d391kg .stMarkdown, [data-testid="stSidebar"] .stMarkdown {
+        color: #ffffff !important;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .css-1d391kg h1, [data-testid="stSidebar"] h1,
+    .css-1d391kg h2, [data-testid="stSidebar"] h2,
+    .css-1d391kg h3, [data-testid="stSidebar"] h3 {
+        color: #f59e0b !important;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Sidebar button styling */
+    .css-1d391kg .stButton > button, [data-testid="stSidebar"] .stButton > button {
+        background: rgba(30, 41, 59, 0.8) !important;
+        color: #ffffff !important;
+        border: 1px solid #475569 !important;
+        border-radius: 8px !important;
+        width: 100% !important;
+        padding: 0.5rem 1rem !important;
+        font-weight: 500 !important;
+        font-family: 'Inter', sans-serif !important;
+        transition: all 0.3s ease !important;
+        margin-bottom: 0.5rem !important;
+        text-transform: none !important;
+        letter-spacing: normal !important;
+    }
+    
+    .css-1d391kg .stButton > button:hover, [data-testid="stSidebar"] .stButton > button:hover {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.2) 100%) !important;
+        border-color: #f59e0b !important;
+        color: #f59e0b !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3) !important;
+    }
+    
+    /* Sidebar links styling */
+    .css-1d391kg a, [data-testid="stSidebar"] a {
+        color: #93c5fd !important;
+        text-decoration: none !important;
+        transition: color 0.3s ease !important;
+    }
+    
+    .css-1d391kg a:hover, [data-testid="stSidebar"] a:hover {
+        color: #f59e0b !important;
+        text-decoration: underline !important;
+    }
+    
+    /* Sidebar resource link styling */
+    .css-1d391kg .resource-link, [data-testid="stSidebar"] .resource-link {
+        display: block !important;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+        color: #000000 !important;
+        padding: 0.75rem 1rem !important;
+        border-radius: 8px !important;
+        text-decoration: none !important;
+        font-weight: 600 !important;
+        font-family: 'Inter', sans-serif !important;
+        text-align: center !important;
+        margin: 1rem 0 !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3) !important;
+    }
+    
+    .css-1d391kg .resource-link:hover, [data-testid="stSidebar"] .resource-link:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 16px rgba(245, 158, 11, 0.5) !important;
+        text-decoration: none !important;
+        color: #000000 !important;
+    }
+    
     /* Button styling */
     .stButton > button {
         background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
