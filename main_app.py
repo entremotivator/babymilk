@@ -8,6 +8,169 @@ import base64
 import os
 
 # -------------------------
+# Sidebar Widget State Management
+# -------------------------
+if "sidebar_closed" not in st.session_state:
+    st.session_state.sidebar_closed = False
+if "sidebar_visible" not in st.session_state:
+    st.session_state.sidebar_visible = True
+
+def toggle_sidebar():
+    """Toggle sidebar visibility - once closed, cannot be reopened"""
+    if not st.session_state.sidebar_closed:
+        st.session_state.sidebar_visible = not st.session_state.sidebar_visible
+        if not st.session_state.sidebar_visible:
+            st.session_state.sidebar_closed = True
+
+def sidebar_widget_css():
+    """CSS for sidebar widget functionality"""
+    if st.session_state.sidebar_closed:
+        # Hide sidebar permanently once closed
+        sidebar_display = "none !important"
+        main_margin = "0 !important"
+        widget_display = "none !important"
+    elif st.session_state.sidebar_visible:
+        # Show sidebar
+        sidebar_display = "block !important"
+        main_margin = "370px !important"
+        widget_display = "block"
+    else:
+        # Hide sidebar but show toggle button
+        sidebar_display = "none !important"
+        main_margin = "0 !important"
+        widget_display = "block"
+    
+    return f"""
+    <style>
+        /* Sidebar Widget Toggle Button */
+        .sidebar-widget {{
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 999999;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #000000;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+            transition: all 0.3s ease;
+            display: {widget_display};
+        }}
+        
+        .sidebar-widget:hover {{
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6);
+            transform: translateY(-2px);
+        }}
+        
+        .sidebar-widget.closed {{
+            background: #6b7280;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }}
+        
+        .sidebar-widget.closed:hover {{
+            background: #6b7280;
+            transform: none;
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+        }}
+        
+        /* Sidebar Control */
+        section[data-testid="stSidebar"] {{
+            display: {sidebar_display};
+            visibility: visible !important;
+            width: 350px !important;
+            min-width: 350px !important;
+        }}
+        
+        .css-1d391kg, .st-emotion-cache-1d391kg {{
+            display: {sidebar_display};
+            visibility: visible !important;
+            width: 350px !important;
+        }}
+        
+        /* Main content adjustment */
+        .main .block-container {{
+            padding-left: {main_margin};
+            transition: padding-left 0.3s ease;
+        }}
+        
+        /* Widget status indicator */
+        .widget-status {{
+            position: fixed;
+            top: 70px;
+            left: 20px;
+            z-index: 999998;
+            background: rgba(30, 41, 59, 0.9);
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-family: 'Inter', sans-serif;
+            border: 1px solid #475569;
+            display: {widget_display};
+        }}
+    </style>
+    """
+
+def render_sidebar_widget():
+    """Render the sidebar toggle widget"""
+    if st.session_state.sidebar_closed:
+        button_text = "🚫 Sidebar Permanently Closed"
+        button_class = "sidebar-widget closed"
+        status_text = "Status: Sidebar permanently closed"
+        onclick = ""
+    elif st.session_state.sidebar_visible:
+        button_text = "◀️ Close Sidebar"
+        button_class = "sidebar-widget"
+        status_text = "Status: Sidebar open"
+        onclick = "document.getElementById('close-sidebar-btn').click();"
+    else:
+        button_text = "▶️ Open Sidebar"
+        button_class = "sidebar-widget"
+        status_text = "Status: Sidebar closed (can reopen)"
+        onclick = "document.getElementById('open-sidebar-btn').click();"
+    
+    widget_html = f"""
+    <div class="{button_class}" onclick="{onclick}">
+        {button_text}
+    </div>
+    <div class="widget-status">
+        {status_text}
+    </div>
+    """
+    
+    st.markdown(widget_html, unsafe_allow_html=True)
+    
+    # Hidden buttons for Streamlit interaction
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Close Sidebar", key="close-sidebar-btn", help="Close sidebar permanently"):
+            if not st.session_state.sidebar_closed:
+                st.session_state.sidebar_visible = False
+                st.session_state.sidebar_closed = True
+                st.rerun()
+    
+    with col2:
+        if st.button("Open Sidebar", key="open-sidebar-btn", help="Open sidebar"):
+            if not st.session_state.sidebar_closed:
+                st.session_state.sidebar_visible = True
+                st.rerun()
+    
+    # Style the hidden buttons
+    st.markdown("""
+    <style>
+        div[data-testid="column"]:has(button[kind="secondary"]) {
+            display: none !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+# -------------------------
 # Hide Streamlit Elements
 # -------------------------
 def hide_streamlit_style():
@@ -29,17 +192,13 @@ def hide_streamlit_style():
             footer {visibility: visible;}
             header {visibility: visible;}
             
-            /* Ensure sidebar is always visible and prominent */
+            /* Ensure sidebar is always visible and prominent when not closed */
             section[data-testid="stSidebar"] {
-                display: block !important;
-                visibility: visible !important;
                 width: 350px !important;
                 min-width: 350px !important;
             }
             
             .css-1d391kg, .st-emotion-cache-1d391kg {
-                display: block !important;
-                visibility: visible !important;
                 width: 350px !important;
             }
             </style>
@@ -52,6 +211,9 @@ def hide_streamlit_style():
 def apply_custom_css():
     """Apply professional AI Agent Toolkit theme with enhanced sidebar"""
     hide_streamlit_style()
+    
+    # Apply sidebar widget CSS
+    st.markdown(sidebar_widget_css(), unsafe_allow_html=True)
     
     st.markdown("""
     <style>
@@ -87,8 +249,6 @@ def apply_custom_css():
         box-shadow: 4px 0 20px rgba(245, 158, 11, 0.3) !important;
         width: 350px !important;
         min-width: 350px !important;
-        display: block !important;
-        visibility: visible !important;
     }
     
     section[data-testid="stSidebar"] > div {
@@ -468,37 +628,33 @@ def display_logo():
         """, unsafe_allow_html=True)
 
 def force_show_sidebar():
-    """Force sidebar to be visible and prominent"""
-    st.markdown("""
-    <style>
-        /* Force sidebar visibility with !important */
-        section[data-testid="stSidebar"] {
-            display: block !important;
-            visibility: visible !important;
-            width: 350px !important;
-            min-width: 350px !important;
-            z-index: 999999 !important;
-        }
-        
-        .css-1d391kg, .st-emotion-cache-1d391kg {
-            display: block !important;
-            visibility: visible !important;
-            width: 350px !important;
-            z-index: 999999 !important;
-        }
-        
-        /* Ensure main content adjusts */
-        .main .block-container {
-            padding-left: 370px !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
+    """Force sidebar to be visible and prominent when not closed"""
+    if not st.session_state.sidebar_closed and st.session_state.sidebar_visible:
+        st.markdown("""
+        <style>
+            /* Force sidebar visibility with !important */
+            section[data-testid="stSidebar"] {
+                display: block !important;
+                visibility: visible !important;
+                width: 350px !important;
+                min-width: 350px !important;
+                z-index: 999999 !important;
+            }
+            
+            .css-1d391kg, .st-emotion-cache-1d391kg {
+                display: block !important;
+                visibility: visible !important;
+                width: 350px !important;
+                z-index: 999999 !important;
+            }
+        </style>
+        """, unsafe_allow_html=True)
 
 # -------------------------
 # Supabase Setup
 # -------------------------
 @st.cache_resource
-def init_connection() -> Client:
+def init_connection():
     """Initialize Supabase connection"""
     try:
         url = st.secrets["supabase"]["url"]
@@ -662,42 +818,48 @@ def admin_dashboard():
     display_logo()
     st.title("🎛️ AI Agent Toolkit - Admin Dashboard")
     
-    with st.sidebar:
-        st.markdown("### 🎛️ Admin Command Center")
-        st.markdown("---")
-        
-        if st.session_state.user:
-            st.markdown(f"""
-            <div style="text-align: center; padding: 1rem; background: rgba(245, 158, 11, 0.1); border-radius: 12px; margin: 1rem 0;">
-                <h4>👑 Administrator</h4>
-                <p><strong>Email:</strong> {st.session_state.user.email}</p>
-                <p><strong>Role:</strong> {st.session_state.role.title()}</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("### 🚀 Quick Actions")
-        if st.button("🔄 Refresh Data", use_container_width=True):
-            st.success("Data refreshed!")
-        
-        if st.button("📊 Export Reports", use_container_width=True):
-            st.success("Reports exported!")
-        
-        if st.button("🚪 Logout", type="secondary", use_container_width=True):
-            logout()
-        
-        st.markdown("---")
-        
-        admin_section = st.selectbox(
-            "📋 Select Admin Section",
-            ["📊 Analytics", "👥 User Management", "📚 Resources", "📋 Reports", "⚙️ Settings"],
-            help="Choose the admin section you want to manage"
-        )
-        
-        st.markdown("---")
-        st.markdown("### 🎯 System Status")
-        st.success("🟢 All Systems Operational")
-        st.info("👥 Active Users: 156")
-        st.warning("⚡ Server Load: Medium")
+    # Render sidebar widget
+    render_sidebar_widget()
+    
+    if st.session_state.sidebar_visible and not st.session_state.sidebar_closed:
+        with st.sidebar:
+            st.markdown("### 🎛️ Admin Command Center")
+            st.markdown("---")
+            
+            if st.session_state.user:
+                st.markdown(f"""
+                <div style="text-align: center; padding: 1rem; background: rgba(245, 158, 11, 0.1); border-radius: 12px; margin: 1rem 0;">
+                    <h4>👑 Administrator</h4>
+                    <p><strong>Email:</strong> {st.session_state.user.email}</p>
+                    <p><strong>Role:</strong> {st.session_state.role.title()}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("### 🚀 Quick Actions")
+            if st.button("🔄 Refresh Data", use_container_width=True):
+                st.success("Data refreshed!")
+            
+            if st.button("📊 Export Reports", use_container_width=True):
+                st.success("Reports exported!")
+            
+            if st.button("🚪 Logout", type="secondary", use_container_width=True):
+                logout()
+            
+            st.markdown("---")
+            
+            admin_section = st.selectbox(
+                "📋 Select Admin Section",
+                ["📊 Analytics", "👥 User Management", "📚 Resources", "📋 Reports", "⚙️ Settings"],
+                help="Choose the admin section you want to manage"
+            )
+            
+            st.markdown("---")
+            st.markdown("### 🎯 System Status")
+            st.success("🟢 All Systems Operational")
+            st.info("👥 Active Users: 156")
+            st.warning("⚡ Server Load: Medium")
+    else:
+        admin_section = "📊 Analytics"  # Default when sidebar is closed
     
     if admin_section == "📊 Analytics":
         show_admin_analytics()
@@ -905,97 +1067,101 @@ def show_admin_settings():
 # User Dashboard
 # -------------------------
 def user_dashboard():
-    """Regular user dashboard with enhanced sidebar"""
+    """User dashboard with personalized features"""
     force_show_sidebar()
     
     display_logo()
-    st.title("🤖 Welcome to the AI Agent Toolkit")
+    st.title("🚀 AI Agent Toolkit - Your Personal Dashboard")
     
-    user_email = st.session_state.user.email if st.session_state.user else "Unknown"
-    user_id = st.session_state.user.id if st.session_state.user else None
+    # Render sidebar widget
+    render_sidebar_widget()
     
-    with st.sidebar:
-        st.markdown("### 🏠 User Dashboard")
-        st.markdown("---")
-        
-        # Enhanced user info section
-        st.markdown(f"""
-        <div style="text-align: center; padding: 1.5rem; background: rgba(245, 158, 11, 0.1); border-radius: 12px; margin: 1rem 0;">
-            <h4>👋 Welcome Back!</h4>
-            <p><strong>Name:</strong> {user_email.split('@')[0].title()}</p>
-            <p><strong>Role:</strong> {st.session_state.role.title()}</p>
-            <p><strong>Email:</strong> {user_email}</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("### 🚀 Quick Actions")
-        if st.button("📚 View Resources", use_container_width=True):
-            st.success("Loading resources...")
-        
-        if st.button("📊 My Progress", use_container_width=True):
-            st.success("Loading progress...")
-        
-        if st.button("🚪 Logout", type="secondary", use_container_width=True):
-            logout()
-        
-        st.markdown("---")
-        
-        page = st.selectbox(
-            "🧭 Navigate to:",
-            ["📊 My Activity", "📚 Resources", "👤 Profile", "🔔 Notifications", "❓ Help", "🤝 Community"],
-            help="Select the section you want to explore"
-        )
-        
-        st.markdown("---")
-        st.markdown("### 🎯 Your Stats")
-        st.info("📅 Member since: Jan 2024")
-        st.success("🏆 Downloads: 5")
-        st.warning("⭐ Community Level: Bronze")
-        
-        # Collaboration section in sidebar
-        st.markdown("### 🤝 Community Hub")
-        if st.button("💬 Chat Room", use_container_width=True):
-            st.success("Joining chat room...")
-        if st.button("🎯 Challenges", use_container_width=True):
-            st.success("Loading challenges...")
+    if st.session_state.sidebar_visible and not st.session_state.sidebar_closed:
+        with st.sidebar:
+            st.markdown("### 🎯 Your AI Toolkit")
+            st.markdown("---")
+            
+            if st.session_state.user:
+                st.markdown(f"""
+                <div style="text-align: center; padding: 1rem; background: rgba(245, 158, 11, 0.1); border-radius: 12px; margin: 1rem 0;">
+                    <h4>👤 Welcome Back!</h4>
+                    <p><strong>Email:</strong> {st.session_state.user.email}</p>
+                    <p><strong>Role:</strong> {st.session_state.role.title()}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("### 🚀 Quick Actions")
+            if st.button("📚 Browse Resources", use_container_width=True):
+                st.success("Loading resources...")
+            
+            if st.button("🤝 Join Community", use_container_width=True):
+                st.success("Connecting to community...")
+            
+            if st.button("🚪 Logout", type="secondary", use_container_width=True):
+                logout()
+            
+            st.markdown("---")
+            
+            user_section = st.selectbox(
+                "📋 Select Section",
+                ["🏠 Dashboard", "📚 Resources", "🤝 Community", "👤 Profile", "🔔 Notifications", "❓ Help"],
+                help="Choose the section you want to explore"
+            )
+            
+            st.markdown("---")
+            st.markdown("### 🎯 Your Progress")
+            st.progress(0.7, text="Profile Completion: 70%")
+            st.progress(0.4, text="Resources Downloaded: 40%")
+            st.progress(0.9, text="Community Engagement: 90%")
+    else:
+        user_section = "🏠 Dashboard"  # Default when sidebar is closed
     
-    if page == "📊 My Activity":
-        show_user_activity(user_id, user_email)
-    elif page == "📚 Resources":
+    if user_section == "🏠 Dashboard":
+        show_user_dashboard_home()
+    elif user_section == "📚 Resources":
         show_resources()
-    elif page == "👤 Profile":
-        show_user_profile(user_id, user_email)
-    elif page == "🔔 Notifications":
-        show_user_notifications(user_email)
-    elif page == "❓ Help":
-        show_user_help()
-    elif page == "🤝 Community":
+    elif user_section == "🤝 Community":
         show_community_features()
+    elif user_section == "👤 Profile":
+        show_user_profile(st.session_state.user.id, st.session_state.user.email)
+    elif user_section == "🔔 Notifications":
+        show_user_notifications(st.session_state.user.email)
+    elif user_section == "❓ Help":
+        show_user_help()
 
-def show_user_activity(user_id, user_email):
-    """Show user activity"""
-    st.subheader("📊 Your Activity Overview")
+def show_user_dashboard_home():
+    """Show user dashboard home"""
+    st.subheader("🏠 Welcome to Your AI Agent Toolkit Dashboard")
     
+    # Welcome message
+    st.markdown("""
+    <div class="dashboard-card">
+        <h3>🎯 Your AI Journey Starts Here</h3>
+        <p>Welcome to the most comprehensive AI Agent Toolkit available. Explore resources, connect with the community, and accelerate your AI development journey.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Quick stats
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Days Active", "12", delta="+2")
+        st.metric("Resources Available", "250+", delta="New tools added weekly")
     with col2:
-        st.metric("Total Sessions", "45", delta="+5")
+        st.metric("Community Members", "1,500+", delta="+50 this week")
     with col3:
-        st.metric("Resources Downloaded", "8", delta="+3")
+        st.metric("Success Stories", "89", delta="+5 this month")
     with col4:
-        st.metric("Last Login", "2 hours ago")
+        st.metric("Your Downloads", "3", delta="+1 today")
     
-    st.subheader("📈 Your Activity Chart")
-    dates = pd.date_range(start=datetime.now() - timedelta(days=30), end=datetime.now(), freq='D')
-    activity = pd.DataFrame({
-        'date': dates,
-        'sessions': [max(0, int(abs(hash(str(d) + user_email) % 5) - 1)) for d in dates]
+    # Recent activity
+    st.subheader("📈 Your Recent Activity")
+    activity_chart_data = pd.DataFrame({
+        'Date': pd.date_range(start='2024-01-01', periods=30, freq='D'),
+        'Activity Score': [abs(hash(str(d)) % 10) for d in pd.date_range(start='2024-01-01', periods=30, freq='D')]
     })
     
-    fig = px.bar(activity, x='date', y='sessions', 
-                 title='Your Daily Activity (Last 30 Days)',
-                 color_discrete_sequence=['#f59e0b'])
+    fig = px.area(activity_chart_data, x='Date', y='Activity Score', 
+                  title='Your 30-Day Activity Trend',
+                  color_discrete_sequence=['#f59e0b'])
     fig.update_layout(
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
@@ -1199,6 +1365,8 @@ def login_page():
         .e1fqkh3o3 {display: none !important;}
         .st-emotion-cache-1d391kg {display: none !important;}
         .st-emotion-cache-6qob1r {display: none !important;}
+        .sidebar-widget {display: none !important;}
+        .widget-status {display: none !important;}
     </style>
     """, unsafe_allow_html=True)
     
@@ -1308,3 +1476,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
