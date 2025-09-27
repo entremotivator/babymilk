@@ -143,7 +143,7 @@ else:
                 response = supabase.auth.reset_password_email(
                     email,
                     {
-                        'redirect_to': 'https://kewqjaq7qtyhhscc7regkc.streamlit.app/reset'
+                        'redirect_to': 'https://kewqjaq7qtyhhscc7regkc.streamlit.app/reset1'
                     }
                 )
                 
