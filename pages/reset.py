@@ -32,36 +32,20 @@ def validate_password(password):
     
     return True, ""
 
-def check_user_session():
-    """Check if user is authenticated"""
-    try:
-        user = supabase.auth.get_user()
-        return user.user is not None
-    except:
-        return False
+def validate_email(email):
+    """Validate email format"""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
 
-st.title("🔐 Update Your Password")
-
-# Check if user is logged in
-if not check_user_session():
-    st.error("⚠️ You must be logged in to update your password.")
-    st.info("Please log in first before accessing this page.")
-    st.stop()
-
-# Display current user info (optional)
-try:
-    current_user = supabase.auth.get_user()
-    if current_user.user:
-        st.info(f"Updating password for: {current_user.user.email}")
-except:
-    pass
+st.title("🔐 Set Your New Password")
+st.markdown("Please enter your email and new password to complete the reset process.")
 
 # Password update form
 with st.form("password_update_form"):
-    st.subheader("Enter New Password")
+    st.subheader("Reset Your Password")
     
-    # Current password (for additional security)
-    current_password = st.text_input("Current Password", type="password", help="Enter your current password for verification")
+    # Email confirmation
+    email = st.text_input("Email Address", placeholder="your.email@example.com", help="Enter the email address associated with your account")
     
     # New password
     new_password = st.text_input("New Password", type="password", help="Must be at least 8 characters with uppercase, lowercase, number, and special character")
@@ -80,16 +64,16 @@ with st.form("password_update_form"):
 
 if submit_button:
     # Validation checks
-    if not current_password:
-        st.error("Please enter your current password")
+    if not email:
+        st.error("Please enter your email address")
+    elif not validate_email(email):
+        st.error("Please enter a valid email address")
     elif not new_password:
         st.error("Please enter a new password")
     elif not confirm_password:
         st.error("Please confirm your new password")
     elif new_password != confirm_password:
-        st.error("New passwords do not match")
-    elif current_password == new_password:
-        st.error("New password must be different from current password")
+        st.error("Passwords do not match")
     else:
         # Validate password strength
         is_valid, error_msg = validate_password(new_password)
@@ -97,68 +81,50 @@ if submit_button:
             st.error(error_msg)
         else:
             try:
-                # First verify current password by attempting to sign in
-                try:
-                    current_user = supabase.auth.get_user()
-                    if current_user.user:
-                        # Attempt to sign in with current password to verify it
-                        verification = supabase.auth.sign_in_with_password({
-                            "email": current_user.user.email,
-                            "password": current_password
-                        })
-                        
-                        if verification.user:
-                            # Current password is correct, proceed with update
-                            result = supabase.auth.update_user({"password": new_password})
-                            if result.user:
-                                st.success("✅ Password updated successfully!")
-                                st.balloons()
-                                
-                                # Optional: Show next steps
-                                st.info("💡 Your password has been updated. You may need to log in again with your new password.")
-                            else:
-                                st.error("❌ Failed to update password. Please try again.")
-                        else:
-                            st.error("❌ Current password is incorrect")
-                            
-                except Exception as verification_error:
-                    # If verification fails, still attempt the update (in case the verification method doesn't work)
-                    st.warning("Could not verify current password, attempting update...")
-                    result = supabase.auth.update_user({"password": new_password})
-                    if result.user:
-                        st.success("✅ Password updated successfully!")
-                        st.balloons()
-                    else:
-                        st.error("❌ Failed to update password. Please ensure you're logged in.")
+                # Update user password using the reset token from URL params
+                # The token should be automatically handled by Supabase from the email link
+                result = supabase.auth.update_user({"password": new_password})
+                
+                if result.user:
+                    st.success("✅ Password updated successfully!")
+                    st.balloons()
+                    st.markdown("""
+                    **Success!** Your password has been updated.
+                    
+                    **What's next?**
+                    - Your password is now active
+                    - You can now log in with your new password
+                    - Keep your password secure and don't share it with anyone
+                    """)
+                    
+                    # Optional redirect info
+                    st.info("You can now close this page and log in with your new password.")
+                    
+                else:
+                    st.error("❌ Failed to update password.")
+                    st.error("The reset link may have expired or already been used. Please request a new password reset.")
                         
             except Exception as e:
                 st.error(f"❌ Error updating password: {str(e)}")
                 
                 # Provide helpful error messages based on common issues
-                if "Invalid login credentials" in str(e):
-                    st.error("Current password is incorrect")
+                if "Invalid reset token" in str(e) or "expired" in str(e).lower():
+                    st.error("The reset link has expired or is invalid. Please request a new password reset.")
                 elif "User not found" in str(e):
-                    st.error("User session expired. Please log in again.")
+                    st.error("User not found. Please check your email address.")
                 else:
-                    st.error("Please try again or contact support if the issue persists.")
+                    st.error("Please try again or request a new password reset if the issue persists.")
 
-# Additional security tips
+# Security information
 with st.expander("🛡️ Password Security Tips"):
     st.markdown("""
     - **Use a unique password** that you don't use for other accounts
     - **Consider using a password manager** to generate and store strong passwords
-    - **Enable two-factor authentication** if available
     - **Don't share your password** with anyone
     - **Change your password regularly** (every 3-6 months)
     - **Avoid using personal information** like birthdays or names
     """)
 
-# Logout option
+# Help section
 st.markdown("---")
-if st.button("🚪 Logout", help="Sign out of your account"):
-    try:
-        supabase.auth.sign_out()
-        st.success("Logged out successfully!")
-        st.rerun()  # Refresh the page
-    except Exception as e:
-        st.error(f"Error logging out: {str(e)}")
+st.caption("🔒 This reset link will expire for security purposes. If you're having trouble, please request a new password reset.")
