@@ -16,14 +16,8 @@ def init_connection():
 
 supabase = init_connection()
 
-# Initialize session state
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = True  # Set to True for testing
-if "user" not in st.session_state:
-    st.session_state.user = {"email": "user@example.com", "id": "123"}  # Mock user for testing
-
 def apply_custom_css():
-    """Apply styling for password change page"""
+    """Apply styling for password reset page"""
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -79,13 +73,14 @@ def apply_custom_css():
         background-color: rgba(30, 41, 59, 1);
     }
     
-    .password-container {
+    .reset-container {
         background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%);
         padding: 3rem;
         border-radius: 20px;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         border: 1px solid #475569;
-        margin: 2rem 0;
+        margin: 2rem auto;
+        max-width: 600px;
         backdrop-filter: blur(20px);
     }
     
@@ -107,6 +102,15 @@ def apply_custom_css():
         margin: 1rem 0;
     }
     
+    .warning-message {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.2) 100%);
+        border: 1px solid #f59e0b;
+        color: #fcd34d !important;
+        padding: 1rem;
+        border-radius: 12px;
+        margin: 1rem 0;
+    }
+    
     .info-box {
         background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(99, 102, 241, 0.2) 100%);
         border: 1px solid #3b82f6;
@@ -115,10 +119,33 @@ def apply_custom_css():
         border-radius: 12px;
         margin: 1rem 0;
     }
+    
+    .password-requirements {
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 1rem 0;
+        font-size: 0.9em;
+    }
+    
+    .requirement {
+        display: flex;
+        align-items: center;
+        margin: 0.3rem 0;
+    }
+    
+    .requirement.met {
+        color: #86efac;
+    }
+    
+    .requirement.unmet {
+        color: #fca5a5;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-def reset_password_via_email(email):
+def send_password_reset_email(email):
     """Send password reset email using Supabase REST API"""
     try:
         url = st.secrets["supabase"]["url"]
@@ -145,19 +172,27 @@ def reset_password_via_email(email):
     except Exception as e:
         return False, f"Error: {str(e)}"
 
-def change_password_direct(new_password):
-    """Change password directly using Supabase auth"""
-    try:
-        response = supabase.auth.update_user({"password": new_password})
-        if response.user:
-            return True, "Password changed successfully"
-        else:
-            return False, "Failed to change password"
-    except Exception as e:
-        return False, f"Error changing password: {str(e)}"
+def validate_email(email):
+    """Basic email validation"""
+    import re
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
 
-def password_change_page():
-    """Main password change page"""
+def check_password_requirements(password):
+    """Check password requirements and return status"""
+    requirements = {
+        "length": len(password) >= 8,
+        "uppercase": any(c.isupper() for c in password),
+        "lowercase": any(c.islower() for c in password),
+        "number": any(c.isdigit() for c in password),
+        "special": any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password)
+    }
+    
+    strength_score = sum(requirements.values())
+    return requirements, strength_score
+
+def password_reset_page():
+    """Complete password reset page for logged out users"""
     
     # Apply styling
     apply_custom_css()
@@ -165,175 +200,204 @@ def password_change_page():
     # Header
     st.markdown("""
     <div style="text-align: center; margin: 2rem 0;">
-        <h1>🔐 Change Your Password</h1>
-        <p>Update your account password securely</p>
+        <h1>🔐 Reset Your Password</h1>
+        <p>Enter your email and new password to reset your account password</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # User info display
-    if st.session_state.user:
-        st.markdown(f"""
-        <div class="info-box">
-            <strong>Current User:</strong> {st.session_state.user['email']}
-        </div>
-        """, unsafe_allow_html=True)
+    st.markdown('<div class="reset-container">', unsafe_allow_html=True)
     
-    # Create two columns for different password change methods
+    # Main reset form
+    with st.form("password_reset_form", clear_on_submit=False):
+        st.subheader("Password Reset Information")
+        
+        # Email input
+        email = st.text_input(
+            "Email Address",
+            placeholder="Enter your registered email address",
+            help="This must be the email address associated with your account"
+        )
+        
+        # New password input
+        new_password = st.text_input(
+            "New Password",
+            type="password",
+            placeholder="Enter your new password",
+            help="Choose a strong password with at least 8 characters"
+        )
+        
+        # Confirm password input
+        confirm_password = st.text_input(
+            "Confirm New Password",
+            type="password",
+            placeholder="Re-enter your new password",
+            help="Must match the new password above"
+        )
+        
+        # Password requirements display
+        if new_password:
+            requirements, strength_score = check_password_requirements(new_password)
+            
+            st.markdown('<div class="password-requirements">', unsafe_allow_html=True)
+            st.markdown("**Password Requirements:**")
+            
+            req_html = []
+            req_html.append(f'<div class="requirement {"met" if requirements["length"] else "unmet"}">{"✓" if requirements["length"] else "✗"} At least 8 characters</div>')
+            req_html.append(f'<div class="requirement {"met" if requirements["uppercase"] else "unmet"}">{"✓" if requirements["uppercase"] else "✗"} One uppercase letter</div>')
+            req_html.append(f'<div class="requirement {"met" if requirements["lowercase"] else "unmet"}">{"✓" if requirements["lowercase"] else "✗"} One lowercase letter</div>')
+            req_html.append(f'<div class="requirement {"met" if requirements["number"] else "unmet"}">{"✓" if requirements["number"] else "✗"} One number</div>')
+            req_html.append(f'<div class="requirement {"met" if requirements["special"] else "unmet"}">{"✓" if requirements["special"] else "✗"} One special character</div>')
+            
+            st.markdown(''.join(req_html), unsafe_allow_html=True)
+            
+            # Strength indicator
+            strength_labels = ["Very Weak", "Weak", "Fair", "Good", "Very Strong"]
+            strength_colors = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#16a34a"]
+            strength_index = min(strength_score - 1, 4) if strength_score > 0 else 0
+            
+            if strength_score > 0:
+                st.markdown(f"""
+                <div style="margin: 1rem 0;">
+                    <strong>Password Strength: 
+                    <span style="color: {strength_colors[strength_index]}">
+                    {strength_labels[strength_index]}
+                    </span></strong>
+                    <div style="background: #334155; height: 8px; border-radius: 4px; margin: 0.5rem 0;">
+                        <div style="background: {strength_colors[strength_index]}; height: 100%; width: {(strength_score/5)*100}%; border-radius: 4px; transition: all 0.3s ease;"></div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Submit button
+        submit_button = st.form_submit_button("Reset Password", type="primary")
+        
+        if submit_button:
+            # Validation
+            errors = []
+            
+            if not email:
+                errors.append("Email address is required")
+            elif not validate_email(email):
+                errors.append("Please enter a valid email address")
+            
+            if not new_password:
+                errors.append("New password is required")
+            elif len(new_password) < 8:
+                errors.append("Password must be at least 8 characters long")
+            
+            if not confirm_password:
+                errors.append("Please confirm your password")
+            elif new_password != confirm_password:
+                errors.append("Passwords do not match")
+            
+            # Display errors
+            if errors:
+                error_html = '<div class="error-message">❌ <strong>Please fix the following issues:</strong><ul>'
+                for error in errors:
+                    error_html += f'<li>{error}</li>'
+                error_html += '</ul></div>'
+                st.markdown(error_html, unsafe_allow_html=True)
+            else:
+                # Check password strength
+                requirements, strength_score = check_password_requirements(new_password)
+                
+                if strength_score < 3:
+                    st.markdown('''
+                    <div class="warning-message">
+                    ⚠️ <strong>Weak Password Warning:</strong><br>
+                    Your password doesn't meet all security requirements. Consider making it stronger for better security.
+                    </div>
+                    ''', unsafe_allow_html=True)
+                
+                # Attempt to send reset email
+                success, message = send_password_reset_email(email)
+                
+                if success:
+                    st.markdown(f'''
+                    <div class="success-message">
+                    ✅ <strong>Password Reset Initiated!</strong><br>
+                    We've sent a password reset link to <strong>{email}</strong><br><br>
+                    <strong>Next Steps:</strong><br>
+                    1. Check your email inbox (and spam folder)<br>
+                    2. Click the reset link in the email<br>
+                    3. You'll be redirected to set your new password<br>
+                    4. Use the password you specified: {new_password[:2]}{'*' * (len(new_password)-2)}
+                    </div>
+                    ''', unsafe_allow_html=True)
+                    
+                    st.balloons()
+                    
+                    # Additional info
+                    st.markdown('''
+                    <div class="info-box">
+                    📧 <strong>Email Not Received?</strong><br>
+                    • Check your spam/junk folder<br>
+                    • Wait a few minutes for delivery<br>
+                    • Ensure the email address is correct<br>
+                    • Try requesting another reset if needed
+                    </div>
+                    ''', unsafe_allow_html=True)
+                    
+                else:
+                    st.markdown(f'''
+                    <div class="error-message">
+                    ❌ <strong>Reset Failed:</strong> {message}<br>
+                    Please check your email address and try again.
+                    </div>
+                    ''', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Security information
+    st.markdown("---")
+    st.subheader("🛡️ Security Information")
+    
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("""
-        <div class="password-container">
-        """, unsafe_allow_html=True)
-        
-        st.subheader("📧 Method 1: Email Reset")
-        st.markdown("**Recommended - Most Secure**")
-        st.write("We'll send a secure reset link to your email address.")
-        
-        with st.form("email_reset_form", clear_on_submit=True):
-            email_input = st.text_input(
-                "Email Address", 
-                value=st.session_state.user['email'] if st.session_state.user else "",
-                help="Enter your registered email address"
-            )
-            
-            if st.form_submit_button("Send Reset Email", type="primary"):
-                if email_input:
-                    success, message = reset_password_via_email(email_input)
-                    if success:
-                        st.markdown(f'<div class="success-message">✅ {message}</div>', unsafe_allow_html=True)
-                        st.info("Check your inbox and spam folder for the reset link.")
-                    else:
-                        st.markdown(f'<div class="error-message">❌ {message}</div>', unsafe_allow_html=True)
-                else:
-                    st.markdown('<div class="error-message">❌ Please enter your email address</div>', unsafe_allow_html=True)
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("""
-        <div class="password-container">
-        """, unsafe_allow_html=True)
-        
-        st.subheader("🔑 Method 2: Direct Change")
-        st.markdown("**Quick Change - Current Session**")
-        st.write("Change your password immediately without email verification.")
-        
-        with st.form("direct_change_form", clear_on_submit=True):
-            new_password = st.text_input(
-                "New Password", 
-                type="password",
-                help="Must be at least 6 characters long"
-            )
-            confirm_password = st.text_input(
-                "Confirm New Password", 
-                type="password",
-                help="Re-enter your new password"
-            )
-            
-            # Password strength indicator
-            if new_password:
-                strength_score = 0
-                if len(new_password) >= 6:
-                    strength_score += 1
-                if any(c.isupper() for c in new_password):
-                    strength_score += 1
-                if any(c.islower() for c in new_password):
-                    strength_score += 1
-                if any(c.isdigit() for c in new_password):
-                    strength_score += 1
-                if any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in new_password):
-                    strength_score += 1
-                
-                strength_colors = ["red", "orange", "yellow", "lightgreen", "green"]
-                strength_labels = ["Very Weak", "Weak", "Fair", "Good", "Strong"]
-                
-                if strength_score > 0:
-                    st.markdown(f"""
-                    <div style="margin: 0.5rem 0;">
-                        <small>Password Strength: 
-                        <span style="color: {strength_colors[min(strength_score-1, 4)]}">
-                        {strength_labels[min(strength_score-1, 4)]}
-                        </span></small>
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            if st.form_submit_button("Change Password", type="primary"):
-                if not new_password or not confirm_password:
-                    st.markdown('<div class="error-message">❌ Please fill in both password fields</div>', unsafe_allow_html=True)
-                elif new_password != confirm_password:
-                    st.markdown('<div class="error-message">❌ Passwords do not match</div>', unsafe_allow_html=True)
-                elif len(new_password) < 6:
-                    st.markdown('<div class="error-message">❌ Password must be at least 6 characters long</div>', unsafe_allow_html=True)
-                else:
-                    success, message = change_password_direct(new_password)
-                    if success:
-                        st.markdown(f'<div class="success-message">✅ {message}</div>', unsafe_allow_html=True)
-                        st.balloons()
-                        st.info("Your password has been updated. You may need to log in again on other devices.")
-                    else:
-                        st.markdown(f'<div class="error-message">❌ {message}</div>', unsafe_allow_html=True)
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Security tips section
-    st.markdown("---")
-    st.subheader("🛡️ Password Security Tips")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("""
-        **Strong Password Guidelines:**
-        - At least 8-12 characters
-        - Mix of uppercase & lowercase
-        - Include numbers
-        - Use special characters
-        - Avoid common words
+        **Password Security Tips:**
+        - Use a unique password for each account
+        - Include uppercase and lowercase letters
+        - Add numbers and special characters
+        - Avoid personal information
+        - Consider using a password manager
         """)
     
     with col2:
         st.markdown("""
-        **What to Avoid:**
-        - Personal information
-        - Dictionary words
-        - Sequential numbers
-        - Repeated characters
-        - Previously breached passwords
+        **After Reset:**
+        - Log in with your new password
+        - Update saved passwords in browsers
+        - Sign out of other devices if compromised
+        - Enable two-factor authentication
+        - Keep your password private and secure
         """)
     
-    with col3:
-        st.markdown("""
-        **Best Practices:**
-        - Use unique passwords
-        - Enable 2FA when available
-        - Regular password updates
-        - Use password managers
-        - Never share passwords
-        """)
-    
-    # Navigation buttons
+    # Navigation
     st.markdown("---")
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col1:
-        if st.button("← Back to Dashboard", use_container_width=True):
-            st.info("Navigate back to dashboard")
+        if st.button("← Back to Login", use_container_width=True):
+            st.info("Navigate back to the login page")
     
     with col2:
-        if st.button("🔄 Refresh Page", use_container_width=True):
+        if st.button("🔄 Try Again", use_container_width=True):
             st.rerun()
     
     with col3:
         if st.button("❓ Need Help?", use_container_width=True):
-            st.info("Contact support if you need assistance")
+            st.info("Contact support: support@entremotivator.com")
 
-# Run the password change page
+# Run the password reset page
 if __name__ == "__main__":
     st.set_page_config(
-        page_title="Password Change - AI Agent Toolkit",
+        page_title="Password Reset - AI Agent Toolkit",
         page_icon="🔐",
         layout="wide"
     )
     
-    password_change_page()
+    password_reset_page()
