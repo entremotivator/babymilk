@@ -142,7 +142,9 @@ else:
                 # Send password reset email using the correct method
                 response = supabase.auth.reset_password_email(
                     email,
-                    redirect_to="https://kewqjaq7qtyhhscc7regkc.streamlit.app/reset"
+                    {
+                        'redirect_to': 'https://kewqjaq7qtyhhscc7regkc.streamlit.app/reset'
+                    }
                 )
                 
                 st.success("✅ Password reset email sent!")
