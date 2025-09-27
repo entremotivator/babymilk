@@ -1,181 +1,171 @@
-# simple_password_reset.py
-
-import streamlit as st
-import re
 import requests
+import streamlit as st
 from supabase import create_client, Client
-from typing import Tuple
 
-# Load Supabase credentials
-SUPABASE_URL = st.secrets["SUPABASE_URL"]
-SUPABASE_KEY = st.secrets["SUPABASE_ANON_KEY"]
+# Add this to your imports at the top of your file
 
-# Initialize Supabase client
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# Page configuration
-st.set_page_config(
-    page_title="Reset Password",
-    page_icon="🔐",
-    layout="centered"
-)
-
-# Simple CSS styling
-st.markdown("""
-<style>
-    .main-container {
-        max-width: 500px;
-        margin: 2rem auto;
-        padding: 2rem;
-        background: #f8f9fa;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .stButton > button {
-        width: 100%;
-        background-color: #007bff;
-        color: white;
-        border: none;
-        padding: 0.75rem;
-        border-radius: 5px;
-        font-weight: bold;
-    }
-    .stButton > button:hover {
-        background-color: #0056b3;
-    }
-    .password-requirements {
-        font-size: 0.9rem;
-        color: #666;
-        background: #e9ecef;
-        padding: 1rem;
-        border-radius: 5px;
-        margin: 1rem 0;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-
-def validate_email(email: str) -> bool:
-    """Validate email format"""
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return re.match(pattern, email) is not None
-
-
-def validate_password(password: str) -> Tuple[bool, str]:
-    """Validate password strength"""
-    if len(password) < 8:
-        return False, "Password must be at least 8 characters long"
-    if not re.search(r"[A-Z]", password):
-        return False, "Password must contain at least one uppercase letter"
-    if not re.search(r"[a-z]", password):
-        return False, "Password must contain at least one lowercase letter"
-    if not re.search(r"\d", password):
-        return False, "Password must contain at least one number"
-    return True, ""
-
-
-def send_reset_email(email: str) -> Tuple[bool, str]:
-    """Send password reset email"""
+# Replace your existing reset_password function with this:
+def reset_password(email):
+    """Reset password using Supabase REST API"""
     try:
-        supabase.auth.reset_password_for_email(email)
-        return True, f"Password reset email sent to {email}"
-    except Exception as e:
-        return False, f"Error sending reset email: {str(e)}"
-
-
-def update_password(access_token: str, new_password: str) -> Tuple[bool, str]:
-    """Update password using access token"""
-    try:
-        url = f"{SUPABASE_URL}/auth/v1/user"
+        # Get Supabase credentials
+        url = st.secrets["supabase"]["url"]
+        anon_key = st.secrets["supabase"]["key"]
+        
+        # Supabase Auth REST API endpoint
+        reset_url = f"{url}/auth/v1/recover"
+        
         headers = {
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {access_token}",
+            "apikey": anon_key,
             "Content-Type": "application/json"
         }
-        payload = {"password": new_password}
         
-        response = requests.put(url, headers=headers, json=payload)
+        payload = {
+            "email": email
+        }
+        
+        response = requests.post(reset_url, headers=headers, json=payload)
         
         if response.status_code == 200:
-            return True, "Password updated successfully!"
+            return True, f"Password reset email sent to {email}"
         else:
-            return False, "Failed to update password"
-            
+            # Handle specific error cases
+            if response.status_code == 400:
+                return False, "Invalid email address"
+            elif response.status_code == 429:
+                return False, "Too many requests. Please try again later."
+            else:
+                return False, f"Failed to send reset email. Please try again."
+                
     except Exception as e:
-        return False, f"Error updating password: {str(e)}"
+        return False, f"Reset error: {str(e)}"
 
+# Add this new function for updating passwords (if needed elsewhere in your app)
+def update_user_password(user_id, new_password):
+    """Update user password directly (admin function)"""
+    try:
+        # Use Supabase client to update password
+        supabase.auth.admin.update_user_by_id(
+            user_id, 
+            {"password": new_password}
+        )
+        return True, "Password updated successfully"
+    except Exception as e:
+        return False, f"Failed to update password: {str(e)}"
 
-def main():
-    """Main application"""
+# Updated profile form section - replace the security section in show_user_profile():
+def show_user_profile_security_section():
+    """Security section for user profile with proper password change"""
+    st.write("**Change Password**")
     
-    st.title("🔐 Reset Password")
-    
-    # Check if we have an access token from the reset email link
-    query_params = st.query_params
-    access_token = query_params.get("access_token")
-    
-    if access_token:
-        # Step 2: Password change form
-        st.subheader("Enter New Password")
+    with st.form("password_change_form"):
+        current_password = st.text_input("Current Password", type="password", key="current_pw")
+        new_password = st.text_input("New Password", type="password", key="new_pw")
+        confirm_password = st.text_input("Confirm New Password", type="password", key="confirm_pw")
         
-        with st.form("password_form"):
-            new_password = st.text_input("New Password", type="password")
-            confirm_password = st.text_input("Confirm Password", type="password")
-            
-            # Show password requirements
-            st.markdown("""
-            <div class="password-requirements">
-                <strong>Password Requirements:</strong><br>
-                • At least 8 characters<br>
-                • One uppercase letter<br>
-                • One lowercase letter<br>
-                • One number
-            </div>
-            """, unsafe_allow_html=True)
-            
-            submit = st.form_submit_button("Update Password")
-            
-            if submit:
-                if not new_password or not confirm_password:
-                    st.error("Please fill in both password fields")
-                elif new_password != confirm_password:
-                    st.error("Passwords do not match")
-                else:
-                    is_valid, error_msg = validate_password(new_password)
-                    if not is_valid:
-                        st.error(error_msg)
-                    else:
-                        success, message = update_password(access_token, new_password)
-                        if success:
-                            st.success(message)
-                            st.balloons()
-                            st.info("You can now close this page and log in with your new password")
+        if st.form_submit_button("Update Password", key="update_password_btn"):
+            if not all([current_password, new_password, confirm_password]):
+                st.error("Please fill in all password fields")
+            elif new_password != confirm_password:
+                st.error("New passwords don't match")
+            elif len(new_password) < 6:
+                st.error("Password must be at least 6 characters long")
+            else:
+                # First verify current password by attempting to sign in
+                try:
+                    # Use current user's email
+                    user_email = st.session_state.user.email
+                    
+                    # Verify current password
+                    verify_response = supabase.auth.sign_in_with_password({
+                        "email": user_email, 
+                        "password": current_password
+                    })
+                    
+                    if verify_response.user:
+                        # Current password is correct, now update to new password
+                        update_response = supabase.auth.update_user({
+                            "password": new_password
+                        })
+                        
+                        if update_response.user:
+                            st.success("Password updated successfully!")
                         else:
-                            st.error(message)
-    
-    else:
-        # Step 1: Email input form
-        st.subheader("Enter Your Email")
-        st.write("We'll send you a link to reset your password")
-        
-        with st.form("email_form"):
-            email = st.text_input("Email Address", placeholder="your@email.com")
-            
-            submit = st.form_submit_button("Send Reset Email")
-            
-            if submit:
-                if not email:
-                    st.error("Please enter your email address")
-                elif not validate_email(email):
-                    st.error("Please enter a valid email address")
-                else:
-                    success, message = send_reset_email(email)
-                    if success:
-                        st.success(message)
-                        st.info("Check your email and click the reset link to continue")
+                            st.error("Failed to update password")
                     else:
-                        st.error(message)
+                        st.error("Current password is incorrect")
+                        
+                except Exception as e:
+                    if "Invalid login credentials" in str(e):
+                        st.error("Current password is incorrect")
+                    else:
+                        st.error(f"Error updating password: {str(e)}")
 
+# Alternative simpler approach using password reset for password changes:
+def trigger_password_reset_for_user():
+    """Trigger password reset for current user"""
+    if st.session_state.user and st.session_state.user.email:
+        success, message = reset_password(st.session_state.user.email)
+        if success:
+            st.success("Password reset email sent! Check your inbox.")
+            st.info("You'll receive a secure link to set your new password.")
+        else:
+            st.error(message)
+    else:
+        st.error("Unable to send reset email. Please try logging out and back in.")
 
-if __name__ == "__main__":
-    main()
+# Updated user profile function with the security section:
+def show_user_profile_updated(user_id, user_email):
+    """Updated user profile with working password change"""
+    st.subheader("Your Profile")
+    
+    with st.form("profile_form"):
+        st.write("**Personal Information**")
+        full_name = st.text_input("Full Name", value="")
+        phone = st.text_input("Phone Number", value="")
+        bio = st.text_area("Bio", value="")
+        
+        st.write("**Preferences**")
+        theme = st.selectbox("Theme", ["Dark (AI Agent Toolkit)", "Light", "Auto"])
+        notifications = st.checkbox("Email notifications", value=True)
+        newsletter = st.checkbox("Subscribe to newsletter", value=False)
+        
+        if st.form_submit_button("Save Preferences", type="primary", key="save_prefs"):
+            st.success("Profile preferences updated!")
+    
+    # Separate section for password change
+    st.markdown("---")
+    st.subheader("Change Password")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write("**Option 1: Reset via Email**")
+        st.write("The safest way to change your password")
+        if st.button("Send Password Reset Email", type="primary", key="reset_email_btn"):
+            trigger_password_reset_for_user()
+    
+    with col2:
+        st.write("**Option 2: Change Directly**")
+        with st.form("direct_password_change"):
+            current_pw = st.text_input("Current Password", type="password")
+            new_pw = st.text_input("New Password", type="password") 
+            confirm_pw = st.text_input("Confirm Password", type="password")
+            
+            if st.form_submit_button("Change Password", key="direct_change"):
+                if not all([current_pw, new_pw, confirm_pw]):
+                    st.error("Please fill all fields")
+                elif new_pw != confirm_pw:
+                    st.error("Passwords don't match")
+                elif len(new_pw) < 6:
+                    st.error("Password must be at least 6 characters")
+                else:
+                    try:
+                        # Update password using Supabase auth
+                        response = supabase.auth.update_user({"password": new_pw})
+                        if response.user:
+                            st.success("Password changed successfully!")
+                        else:
+                            st.error("Failed to change password")
+                    except Exception as e:
+                        st.error(f"Error: {str(e)}")
