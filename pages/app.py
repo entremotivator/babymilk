@@ -4,7 +4,6 @@ from supabase import create_client
 # Initialize Supabase client with service role key
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_SERVICE_ROLE_KEY = st.secrets["SUPABASE_SERVICE_ROLE_KEY"]
-
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 # Page UI
@@ -20,18 +19,34 @@ if st.button("Update Password"):
     else:
         try:
             # 1. List all users and find the one with this email
-            users = supabase.auth.admin.list_users()
-            target_user = next((u for u in users["users"] if u["email"] == email), None)
-
+            response = supabase.auth.admin.list_users()
+            
+            # The response might be structured differently depending on the version
+            # Try accessing users as an attribute or key
+            if hasattr(response, 'users'):
+                users_list = response.users
+            elif isinstance(response, dict) and 'users' in response:
+                users_list = response['users']
+            else:
+                users_list = response
+            
+            # Find the target user
+            target_user = next((u for u in users_list if u.email == email or (isinstance(u, dict) and u.get("email") == email)), None)
+            
             if target_user:
+                # Get user ID (handle both object and dict formats)
+                user_id = target_user.id if hasattr(target_user, 'id') else target_user['id']
+                
                 # 2. Update password
                 updated = supabase.auth.admin.update_user_by_id(
-                    target_user["id"],
+                    user_id,
                     {"password": new_password}
                 )
                 st.success(f"✅ Password updated successfully for {email}")
-                st.json(updated)
+                st.json(updated if isinstance(updated, dict) else updated.__dict__)
             else:
                 st.error("❌ User not found")
+                st.info(f"Debug: Found {len(users_list)} total users")
         except Exception as e:
             st.error(f"Error: {e}")
+            st.info("Try checking the Supabase client version and API response structure")
